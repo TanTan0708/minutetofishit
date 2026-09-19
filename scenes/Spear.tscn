@@ -1,0 +1,11 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/spear.gd" id="1_spear"]
+[ext_resource type="Texture2D" path="res://assets/generated/spear.png" id="2_spear"]
+
+[node name="Spear" type="Node2D"]
+z_index = 10
+script = ExtResource("1_spear")
+
+[node name="Sprite" type="Sprite2D" parent="."]
+texture = ExtResource("2_spear")

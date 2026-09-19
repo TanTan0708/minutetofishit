@@ -2,3 +2,6 @@
 .godot/
 .import/
 /android/
+
+# Ziva editor tooling (156 MB of binaries, reinstalled by Ziva on demand)
+addons/ziva_agent/

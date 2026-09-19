@@ -1,0 +1,58 @@
+[gd_scene load_steps=8 format=3]
+
+[ext_resource type="Script" path="res://scripts/game.gd" id="1_game"]
+[ext_resource type="Script" path="res://scripts/aim_preview.gd" id="2_preview"]
+[ext_resource type="PackedScene" path="res://scenes/HUD.tscn" id="3_hud"]
+[ext_resource type="PackedScene" path="res://scenes/Submarine.tscn" id="4_sub"]
+[ext_resource type="Texture2D" path="res://assets/generated/bg_underwater.png" id="5_bg"]
+[ext_resource type="Texture2D" path="res://assets/generated/sand_seabed.png" id="6_sand"]
+[ext_resource type="Texture2D" path="res://assets/generated/submarine.png" id="7_subtex"]
+
+[node name="Main" type="Node2D"]
+script = ExtResource("1_game")
+
+[node name="BG" type="CanvasLayer" parent="."]
+layer = -1
+
+[node name="Sky" type="TextureRect" parent="BG"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+texture = ExtResource("5_bg")
+expand_mode = 1
+stretch_mode = 0
+
+[node name="World" type="Node2D" parent="."]
+
+[node name="Seafloor" type="Sprite2D" parent="World"]
+position = Vector2(576, 622)
+texture = ExtResource("6_sand")
+texture_repeat = 2
+region_enabled = true
+region_rect = Rect2(0, 10, 1160, 52)
+
+[node name="Fish" type="Node2D" parent="World"]
+
+[node name="Sub" parent="World" instance=ExtResource("4_sub")]
+position = Vector2(576, 596)
+body_texture = ExtResource("7_subtex")
+
+[node name="Spear" type="Node2D" parent="World"]
+
+[node name="Rope" type="Line2D" parent="World"]
+visible = false
+z_index = 8
+width = 3.0
+default_color = Color(0.92, 0.95, 0.86, 0.9)
+begin_cap_mode = 2
+end_cap_mode = 2
+antialiased = true
+
+[node name="AimPreview" type="Node2D" parent="World"]
+z_index = 30
+script = ExtResource("2_preview")
+
+[node name="Camera2D" type="Camera2D" parent="."]
+position = Vector2(576, 324)
+
+[node name="HUD" parent="." instance=ExtResource("3_hud")]
