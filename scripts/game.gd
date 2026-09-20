@@ -31,6 +31,9 @@ const SPAWN_MIN := 0.35
 const SPAWN_MAX := 0.8
 const START_FISH := 5
 const REEL_BASE_SPEED := 1500.0
+const RAPID_FIRE_REEL_SPEED := 3200.0
+const FROZEN_TIME_DURATION := 7.0
+const GOLD_RUSH_DURATION := 7.0
 
 ## The wallet, best score and skins live in SaveData's own file; this is just
 ## the local UI preference for the instructions popup.
@@ -101,6 +104,12 @@ var _spear: Spear = null
 var _awaiting_first_play: bool = false
 var _restart_armed: bool = false
 var _restart_arm_timer: float = 0.0
+## Power-ups paid for and active on the current run - re-charged from
+## whatever's toggled on in the HUD every time a run actually begins, so
+## a restart re-buys the same loadout rather than reusing it for free.
+var _equipped_powerups: Array[String] = []
+var _frozen_time_left: float = 0.0
+var _gold_rush_left: float = 0.0
 ## Fish art lives here, loaded through Assets so a freshly generated png still
 ## works even before the editor has imported it.
 var _fish_textures: Dictionary = {}
@@ -167,13 +176,35 @@ func _begin_run() -> void:
 	caught = 0
 	earned = 0
 	time_left = RUN_SECONDS
+	_apply_powerups()
 	hud.set_score(0)
 	hud.set_earned(0)
-	hud.set_wallet(SaveData.money)
-	hud.set_hint("Drag anywhere to aim, release to fire   •   arrows to aim, Up/Down for power, Space to fire")
 	for i in START_FISH:
 		_spawn_fish(_rng.randf_range(90.0, 1060.0))
 	hud.animate_run_start()
+
+
+## Charges the wallet for whatever's equipped in the HUD's power-up picker
+## and turns their effects on for this run. Anything that can't be
+## afforded (e.g. the wallet dropped between selecting it and pressing
+## Play) is silently dropped rather than blocking the run. The hint bar
+## (not the countdown's Message label, which the 3-2-1-GO sequence needs
+## for itself) shows what's active for the whole run.
+func _apply_powerups() -> void:
+	_equipped_powerups.clear()
+	for id in hud.get_selected_powerups():
+		if SaveData.spend(SaveData.powerup_price(id)):
+			_equipped_powerups.append(id)
+	_frozen_time_left = FROZEN_TIME_DURATION if _equipped_powerups.has("frozen_time") else 0.0
+	_gold_rush_left = GOLD_RUSH_DURATION if _equipped_powerups.has("gold_rush") else 0.0
+	hud.set_wallet(SaveData.money)
+	if _equipped_powerups.is_empty():
+		hud.set_hint("Drag anywhere to aim, release to fire   •   arrows to aim, Up/Down for power, Space to fire")
+		return
+	var names: PackedStringArray = []
+	for id in _equipped_powerups:
+		names.append(SaveData.powerup_name(id))
+	hud.set_hint("EQUIPPED: " + ", ".join(names))
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -232,6 +263,9 @@ func _reset_run_state() -> void:
 	_dragging = false
 	preview.enabled = false
 	_restart_armed = false
+	_equipped_powerups.clear()
+	_frozen_time_left = 0.0
+	_gold_rush_left = 0.0
 	caught = 0
 	earned = 0
 	time_left = RUN_SECONDS
@@ -281,7 +315,12 @@ func _process(delta: float) -> void:
 				state = State.FISHING
 				hud.show_message("GO!", Color(0.7, 0.98, 0.8), 0.6)
 		State.FISHING:
-			time_left -= delta
+			if _frozen_time_left > 0.0:
+				_frozen_time_left -= delta
+			else:
+				time_left -= delta
+			if _gold_rush_left > 0.0:
+				_gold_rush_left -= delta
 			hud.set_time(time_left, RUN_SECONDS)
 			if time_left <= 0.0:
 				time_left = 0.0
@@ -364,7 +403,8 @@ func fire() -> void:
 	_spear.home = muzzle
 	_spear.seabed_y = SEABED_Y
 	_spear.bounds = Rect2(WALL_LEFT, CEILING_Y, WALL_RIGHT - WALL_LEFT, SEABED_Y - CEILING_Y)
-	_spear.launch(aim_velocity(), GRAVITY, WATER_DRAG, REEL_BASE_SPEED)
+	var reel_speed: float = RAPID_FIRE_REEL_SPEED if _equipped_powerups.has("rapid_fire") else REEL_BASE_SPEED
+	_spear.launch(aim_velocity(), GRAVITY, WATER_DRAG, reel_speed)
 	_spear.impact.connect(_on_spear_impact)
 	_spear.collected.connect(_on_spear_collected)
 	add_shake(4.0)
@@ -402,6 +442,8 @@ func _on_spear_collected(fish: Fish) -> void:
 	if fish == null or not is_instance_valid(fish):
 		return
 	var gained: int = fish.value
+	if _equipped_powerups.has("multiplier"):
+		gained *= 2
 	var kind: String = fish.kind
 	earned += gained
 	caught += 1
@@ -439,6 +481,8 @@ func _spawn_fish(at_x: float = -1.0) -> void:
 
 
 func _pick_kind() -> String:
+	if _gold_rush_left > 0.0:
+		return "golden"
 	var total: float = 0.0
 	for key in FISH_TYPES:
 		total += float(FISH_TYPES[key]["weight"])

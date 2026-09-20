@@ -1,6 +1,7 @@
 class_name AimPreview
 extends Node2D
 
+
 ## Dotted prediction of where the spear will go. Integrates with exactly the
 ## same water physics as the spear, and locks onto the first fish the path
 ## crosses so you always know what you are about to hit.
@@ -106,7 +107,3 @@ func _first_target(previous: Vector2, next: Vector2) -> Dictionary:
 				best_progress = t
 				best = target
 	return best
-
-
-
-

@@ -293,11 +293,11 @@ theme_override_styles/panel = SubResource("panel_sb")
 
 [node name="VBox" type="VBoxContainer" parent="Root/Home/Panel"]
 layout_mode = 2
-theme_override_constants/separation = 14
+theme_override_constants/separation = 10
 alignment = 1
 
 [node name="Title" type="TextureRect" parent="Root/Home/Panel/VBox"]
-custom_minimum_size = Vector2(0, 100)
+custom_minimum_size = Vector2(0, 92)
 layout_mode = 2
 texture = ExtResource("5_logo")
 expand_mode = 1
@@ -307,29 +307,95 @@ stretch_mode = 5
 layout_mode = 2
 theme_override_colors/font_color = Color(0.85, 0.95, 1, 0.9)
 theme_override_fonts/font = ExtResource("3_vt323")
-theme_override_font_sizes/font_size = 22
+theme_override_font_sizes/font_size = 20
 text = "Spear fish. Beat the clock. Don't touch the bombs."
 horizontal_alignment = 1
 autowrap_mode = 2
 
-[node name="BestLabel" type="Label" parent="Root/Home/Panel/VBox"]
+[node name="StatsRow" type="HBoxContainer" parent="Root/Home/Panel/VBox"]
 layout_mode = 2
+size_flags_horizontal = 4
+theme_override_constants/separation = 28
+
+[node name="BestLabel" type="Label" parent="Root/Home/Panel/VBox/StatsRow"]
+layout_mode = 2
+size_flags_horizontal = 3
 theme_override_colors/font_color = Color(1, 0.85, 0.32, 1)
 theme_override_fonts/font = ExtResource("3_vt323")
-theme_override_font_sizes/font_size = 20
+theme_override_font_sizes/font_size = 19
 text = "BEST  0 FISH"
 horizontal_alignment = 1
 
-[node name="WalletLabel" type="Label" parent="Root/Home/Panel/VBox"]
+[node name="WalletLabel" type="Label" parent="Root/Home/Panel/VBox/StatsRow"]
 layout_mode = 2
+size_flags_horizontal = 3
 theme_override_colors/font_color = Color(0.75, 1, 0.85, 1)
 theme_override_fonts/font = ExtResource("3_vt323")
-theme_override_font_sizes/font_size = 20
+theme_override_font_sizes/font_size = 19
 text = "WALLET  $0"
 horizontal_alignment = 1
 
+[node name="PowerupsPanel" type="PanelContainer" parent="Root/Home/Panel/VBox"]
+layout_mode = 2
+size_flags_horizontal = 4
+
+[node name="PowerupsBox" type="VBoxContainer" parent="Root/Home/Panel/VBox/PowerupsPanel"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="PowerupsLabel" type="Label" parent="Root/Home/Panel/VBox/PowerupsPanel/PowerupsBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.85, 0.95, 1, 0.85)
+theme_override_fonts/font = ExtResource("3_vt323")
+theme_override_font_sizes/font_size = 18
+text = "POWER-UPS  -  equip for this run"
+horizontal_alignment = 1
+
+[node name="PowerupGrid" type="GridContainer" parent="Root/Home/Panel/VBox/PowerupsPanel/PowerupsBox"]
+layout_mode = 2
+size_flags_horizontal = 4
+columns = 2
+theme_override_constants/h_separation = 10
+theme_override_constants/v_separation = 8
+
+[node name="FrozenTimeButton" type="Button" parent="Root/Home/Panel/VBox/PowerupsPanel/PowerupsBox/PowerupGrid"]
+custom_minimum_size = Vector2(196, 50)
+layout_mode = 2
+toggle_mode = true
+theme_override_fonts/font = ExtResource("2_press")
+theme_override_font_sizes/font_size = 12
+text = "FROZEN TIME
+$0"
+
+[node name="MultiplierButton" type="Button" parent="Root/Home/Panel/VBox/PowerupsPanel/PowerupsBox/PowerupGrid"]
+custom_minimum_size = Vector2(196, 50)
+layout_mode = 2
+toggle_mode = true
+theme_override_fonts/font = ExtResource("2_press")
+theme_override_font_sizes/font_size = 12
+text = "2X MULTIPLIER
+$0"
+
+[node name="GoldRushButton" type="Button" parent="Root/Home/Panel/VBox/PowerupsPanel/PowerupsBox/PowerupGrid"]
+custom_minimum_size = Vector2(196, 50)
+layout_mode = 2
+toggle_mode = true
+theme_override_fonts/font = ExtResource("2_press")
+theme_override_font_sizes/font_size = 12
+text = "GOLD RUSH
+$0"
+
+[node name="RapidFireButton" type="Button" parent="Root/Home/Panel/VBox/PowerupsPanel/PowerupsBox/PowerupGrid"]
+custom_minimum_size = Vector2(196, 50)
+layout_mode = 2
+toggle_mode = true
+theme_override_fonts/font = ExtResource("2_press")
+theme_override_font_sizes/font_size = 12
+text = "RAPID FIRE
+$0"
+
 [node name="Spacer" type="Control" parent="Root/Home/Panel/VBox"]
-custom_minimum_size = Vector2(0, 6)
+custom_minimum_size = Vector2(0, 2)
 layout_mode = 2
 
 [node name="PlayButton" type="Button" parent="Root/Home/Panel/VBox"]
@@ -340,21 +406,24 @@ theme_override_fonts/font = ExtResource("2_press")
 theme_override_font_sizes/font_size = 18
 text = "PLAY"
 
-[node name="ShopButton" type="Button" parent="Root/Home/Panel/VBox"]
-custom_minimum_size = Vector2(260, 48)
+[node name="ActionsRow" type="HBoxContainer" parent="Root/Home/Panel/VBox"]
 layout_mode = 2
 size_flags_horizontal = 4
+theme_override_constants/separation = 10
+
+[node name="ShopButton" type="Button" parent="Root/Home/Panel/VBox/ActionsRow"]
+custom_minimum_size = Vector2(125, 44)
+layout_mode = 2
 theme_override_fonts/font = ExtResource("2_press")
-theme_override_font_sizes/font_size = 14
+theme_override_font_sizes/font_size = 12
 text = "SHOP"
 
-[node name="HowToButton" type="Button" parent="Root/Home/Panel/VBox"]
-custom_minimum_size = Vector2(260, 48)
+[node name="HowToButton" type="Button" parent="Root/Home/Panel/VBox/ActionsRow"]
+custom_minimum_size = Vector2(125, 44)
 layout_mode = 2
-size_flags_horizontal = 4
 theme_override_fonts/font = ExtResource("2_press")
-theme_override_font_sizes/font_size = 14
-text = "HOW TO PLAY"
+theme_override_font_sizes/font_size = 12
+text = "HOW TO"
 
 [node name="HotkeyHint" type="Label" parent="Root/Home/Panel/VBox"]
 layout_mode = 2
