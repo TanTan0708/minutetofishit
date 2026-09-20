@@ -50,19 +50,19 @@ const POWERUP_ORDER := ["frozen_time", "multiplier", "gold_rush", "rapid_fire"]
 
 const POWERUPS := {
 	"frozen_time": {
-		"name": "FROZEN TIME", "price": 120,
-		"blurb": "Clock stays frozen for the first 10s of the run.",
+		"name": "FROZEN TIME", "price": 500,
+		"blurb": "Clock stays frozen for the first 7s of the run.",
 	},
 	"multiplier": {
-		"name": "2X MULTIPLIER", "price": 180,
+		"name": "2X MULTIPLIER", "price": 1000,
 		"blurb": "Every dollar you earn this run is doubled.",
 	},
 	"gold_rush": {
-		"name": "GOLD RUSH", "price": 260,
+		"name": "GOLD RUSH", "price": 2000,
 		"blurb": "Every fish that spawns this run is golden.",
 	},
 	"rapid_fire": {
-		"name": "RAPID FIRE", "price": 140,
+		"name": "RAPID FIRE", "price": 500,
 		"blurb": "Your spear reels back in a flash - fire much faster.",
 	},
 }

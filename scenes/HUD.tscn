@@ -1,10 +1,15 @@
-[gd_scene load_steps=7 format=3]
+[gd_scene load_steps=12 format=3]
 
 [ext_resource type="Script" path="res://scripts/hud.gd" id="1_hud"]
 [ext_resource type="FontFile" path="res://assets/fonts/PressStart2P.ttf" id="2_press"]
 [ext_resource type="FontFile" path="res://assets/fonts/VT323.ttf" id="3_vt323"]
 [ext_resource type="Texture2D" path="res://assets/generated/ui_panel.png" id="4_panel"]
 [ext_resource type="Texture2D" path="res://assets/generated/logo.png" id="5_logo"]
+[ext_resource type="Texture2D" path="res://assets/generated/fish_small.png" id="6_fishsmall"]
+[ext_resource type="Texture2D" path="res://assets/generated/fish_medium.png" id="7_fishmed"]
+[ext_resource type="Texture2D" path="res://assets/generated/fish_large.png" id="8_fishlarge"]
+[ext_resource type="Texture2D" path="res://assets/generated/fish_golden.png" id="9_fishgold"]
+[ext_resource type="Texture2D" path="res://assets/generated/fish_bomb.png" id="10_fishbomb"]
 
 [sub_resource type="StyleBoxTexture" id="panel_sb"]
 texture = ExtResource("4_panel")
@@ -162,16 +167,19 @@ text = "WALLET  $0"
 horizontal_alignment = 2
 
 [node name="Message" type="Label" parent="Root"]
-offset_top = 224.0
-offset_right = 1152.0
-offset_bottom = 314.0
+offset_left = 40.0
+offset_top = 190.0
+offset_right = 1112.0
+offset_bottom = 350.0
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_colors/font_outline_color = Color(0.02, 0.06, 0.1, 1)
 theme_override_constants/outline_size = 10
 theme_override_fonts/font = ExtResource("2_press")
 theme_override_font_sizes/font_size = 40
+theme_override_constants/line_spacing = -6
 horizontal_alignment = 1
 vertical_alignment = 1
+autowrap_mode = 2
 
 [node name="Hint" type="Label" parent="Root"]
 offset_top = 574.0
@@ -275,7 +283,18 @@ anchor_bottom = 1.0
 offset_right = 1152.0
 offset_bottom = 648.0
 mouse_filter = 2
-color = Color(0.01, 0.04, 0.08, 0.55)
+color = Color(0.01, 0.04, 0.08, 0.82)
+
+[node name="MuteButton" type="Button" parent="Root/Home"]
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -76.0
+offset_top = 20.0
+offset_right = -20.0
+offset_bottom = 76.0
+toggle_mode = true
+expand_icon = true
+theme_override_constants/icon_max_width = 34
 
 [node name="Panel" type="PanelContainer" parent="Root/Home"]
 anchor_left = 0.5
@@ -297,7 +316,7 @@ theme_override_constants/separation = 10
 alignment = 1
 
 [node name="Title" type="TextureRect" parent="Root/Home/Panel/VBox"]
-custom_minimum_size = Vector2(0, 92)
+custom_minimum_size = Vector2(0, 150)
 layout_mode = 2
 texture = ExtResource("5_logo")
 expand_mode = 1
@@ -315,24 +334,60 @@ autowrap_mode = 2
 [node name="StatsRow" type="HBoxContainer" parent="Root/Home/Panel/VBox"]
 layout_mode = 2
 size_flags_horizontal = 4
-theme_override_constants/separation = 28
+theme_override_constants/separation = 14
 
-[node name="BestLabel" type="Label" parent="Root/Home/Panel/VBox/StatsRow"]
+[node name="BestCard" type="PanelContainer" parent="Root/Home/Panel/VBox/StatsRow"]
+custom_minimum_size = Vector2(220, 0)
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_colors/font_color = Color(1, 0.85, 0.32, 1)
+
+[node name="BestVBox" type="VBoxContainer" parent="Root/Home/Panel/VBox/StatsRow/BestCard"]
+layout_mode = 2
+theme_override_constants/separation = 2
+
+[node name="BestCaption" type="Label" parent="Root/Home/Panel/VBox/StatsRow/BestCard/BestVBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.85, 0.95, 1, 0.75)
 theme_override_fonts/font = ExtResource("3_vt323")
-theme_override_font_sizes/font_size = 19
-text = "BEST  0 FISH"
+theme_override_font_sizes/font_size = 15
+text = "BEST SCORE"
 horizontal_alignment = 1
 
-[node name="WalletLabel" type="Label" parent="Root/Home/Panel/VBox/StatsRow"]
+[node name="BestLabel" type="Label" parent="Root/Home/Panel/VBox/StatsRow/BestCard/BestVBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.85, 0.32, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 5
+theme_override_fonts/font = ExtResource("2_press")
+theme_override_font_sizes/font_size = 16
+text = "0 FISH"
+horizontal_alignment = 1
+
+[node name="WalletCard" type="PanelContainer" parent="Root/Home/Panel/VBox/StatsRow"]
+custom_minimum_size = Vector2(220, 0)
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_colors/font_color = Color(0.75, 1, 0.85, 1)
+
+[node name="WalletVBox" type="VBoxContainer" parent="Root/Home/Panel/VBox/StatsRow/WalletCard"]
+layout_mode = 2
+theme_override_constants/separation = 2
+
+[node name="WalletCaption" type="Label" parent="Root/Home/Panel/VBox/StatsRow/WalletCard/WalletVBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.85, 0.95, 1, 0.75)
 theme_override_fonts/font = ExtResource("3_vt323")
-theme_override_font_sizes/font_size = 19
-text = "WALLET  $0"
+theme_override_font_sizes/font_size = 15
+text = "WALLET"
+horizontal_alignment = 1
+
+[node name="WalletLabel" type="Label" parent="Root/Home/Panel/VBox/StatsRow/WalletCard/WalletVBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.6, 1, 0.75, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 5
+theme_override_fonts/font = ExtResource("2_press")
+theme_override_font_sizes/font_size = 16
+text = "$0"
 horizontal_alignment = 1
 
 [node name="PowerupsPanel" type="PanelContainer" parent="Root/Home/Panel/VBox"]
@@ -473,24 +528,133 @@ theme_override_font_sizes/font_size = 22
 text = "HOW TO PLAY"
 horizontal_alignment = 1
 
-[node name="Body" type="Label" parent="Root/Instructions/Panel/VBox"]
+[node name="Controls" type="Label" parent="Root/Instructions/Panel/VBox"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.92, 0.96, 1, 0.95)
 theme_override_fonts/font = ExtResource("3_vt323")
 theme_override_font_sizes/font_size = 21
-text = "• Drag anywhere and release to aim & fire your speargun
-• Or use arrow keys to aim, Up/Down for power, Space to fire
-• Your score is how many fish you land in one minute
-• Fish pay cash - bigger and rarer fish pay more
-• Golden fish are the jackpot; fast fish dart away quickly
-• Bomb fish end your run instantly - don't spear them!
-• Cash is saved between runs - spend it on sub skins in the shop
-• Press R to restart a run (press it twice to confirm)
-• Press Esc to go back to the title screen
-• Press F1 anytime to see this screen again"
-horizontal_alignment = 0
-autowrap_mode = 3
-custom_minimum_size = Vector2(600, 0)
+text = "Drag & release (or arrows + Space) to aim & fire"
+horizontal_alignment = 1
+autowrap_mode = 2
+custom_minimum_size = Vector2(560, 0)
+
+[node name="FishRow" type="HBoxContainer" parent="Root/Instructions/Panel/VBox"]
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_constants/separation = 14
+
+[node name="Small" type="VBoxContainer" parent="Root/Instructions/Panel/VBox/FishRow"]
+layout_mode = 2
+theme_override_constants/separation = 2
+
+[node name="Icon" type="TextureRect" parent="Root/Instructions/Panel/VBox/FishRow/Small"]
+custom_minimum_size = Vector2(52, 52)
+layout_mode = 2
+texture = ExtResource("6_fishsmall")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Label" type="Label" parent="Root/Instructions/Panel/VBox/FishRow/Small"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.85, 0.95, 1, 0.9)
+theme_override_fonts/font = ExtResource("3_vt323")
+theme_override_font_sizes/font_size = 17
+text = "$"
+horizontal_alignment = 1
+
+[node name="Medium" type="VBoxContainer" parent="Root/Instructions/Panel/VBox/FishRow"]
+layout_mode = 2
+theme_override_constants/separation = 2
+
+[node name="Icon" type="TextureRect" parent="Root/Instructions/Panel/VBox/FishRow/Medium"]
+custom_minimum_size = Vector2(52, 52)
+layout_mode = 2
+texture = ExtResource("7_fishmed")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Label" type="Label" parent="Root/Instructions/Panel/VBox/FishRow/Medium"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.85, 0.95, 1, 0.9)
+theme_override_fonts/font = ExtResource("3_vt323")
+theme_override_font_sizes/font_size = 17
+text = "$$"
+horizontal_alignment = 1
+
+[node name="Large" type="VBoxContainer" parent="Root/Instructions/Panel/VBox/FishRow"]
+layout_mode = 2
+theme_override_constants/separation = 2
+
+[node name="Icon" type="TextureRect" parent="Root/Instructions/Panel/VBox/FishRow/Large"]
+custom_minimum_size = Vector2(52, 52)
+layout_mode = 2
+texture = ExtResource("8_fishlarge")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Label" type="Label" parent="Root/Instructions/Panel/VBox/FishRow/Large"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.85, 0.95, 1, 0.9)
+theme_override_fonts/font = ExtResource("3_vt323")
+theme_override_font_sizes/font_size = 17
+text = "$$$"
+horizontal_alignment = 1
+
+[node name="Golden" type="VBoxContainer" parent="Root/Instructions/Panel/VBox/FishRow"]
+layout_mode = 2
+theme_override_constants/separation = 2
+
+[node name="Icon" type="TextureRect" parent="Root/Instructions/Panel/VBox/FishRow/Golden"]
+custom_minimum_size = Vector2(52, 52)
+layout_mode = 2
+texture = ExtResource("9_fishgold")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Label" type="Label" parent="Root/Instructions/Panel/VBox/FishRow/Golden"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.85, 0.32, 1)
+theme_override_fonts/font = ExtResource("3_vt323")
+theme_override_font_sizes/font_size = 17
+text = "JACKPOT"
+horizontal_alignment = 1
+
+[node name="Bomb" type="VBoxContainer" parent="Root/Instructions/Panel/VBox/FishRow"]
+layout_mode = 2
+theme_override_constants/separation = 2
+
+[node name="Icon" type="TextureRect" parent="Root/Instructions/Panel/VBox/FishRow/Bomb"]
+custom_minimum_size = Vector2(52, 52)
+layout_mode = 2
+texture = ExtResource("10_fishbomb")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Label" type="Label" parent="Root/Instructions/Panel/VBox/FishRow/Bomb"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.5, 0.4, 1)
+theme_override_fonts/font = ExtResource("3_vt323")
+theme_override_font_sizes/font_size = 17
+text = "AVOID!"
+horizontal_alignment = 1
+
+[node name="Tips" type="Label" parent="Root/Instructions/Panel/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.85, 0.95, 1, 0.85)
+theme_override_fonts/font = ExtResource("3_vt323")
+theme_override_font_sizes/font_size = 19
+text = "Cash carries over between runs - spend it in the Shop"
+horizontal_alignment = 1
+autowrap_mode = 2
+
+[node name="Hotkeys" type="Label" parent="Root/Instructions/Panel/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.7, 0.85, 0.95, 0.8)
+theme_override_fonts/font = ExtResource("3_vt323")
+theme_override_font_sizes/font_size = 18
+text = "R restart   •   Esc pause   •   F1 help
+(press R twice to confirm)"
+horizontal_alignment = 1
 
 [node name="DontShowToggle" type="Button" parent="Root/Instructions/Panel/VBox"]
 custom_minimum_size = Vector2(340, 42)
@@ -508,6 +672,128 @@ size_flags_horizontal = 4
 theme_override_fonts/font = ExtResource("2_press")
 theme_override_font_sizes/font_size = 16
 text = "GOT IT"
+
+[node name="Pause" type="Control" parent="Root"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+visible = false
+
+[node name="Dim" type="ColorRect" parent="Root/Pause"]
+offset_right = 1152.0
+offset_bottom = 648.0
+mouse_filter = 2
+color = Color(0.01, 0.04, 0.08, 0.75)
+
+[node name="Panel" type="PanelContainer" parent="Root/Pause"]
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -220.0
+offset_top = -190.0
+offset_right = 220.0
+offset_bottom = 190.0
+grow_horizontal = 2
+grow_vertical = 2
+custom_minimum_size = Vector2(440, 0)
+theme_override_styles/panel = SubResource("panel_sb")
+
+[node name="VBox" type="VBoxContainer" parent="Root/Pause/Panel"]
+layout_mode = 2
+theme_override_constants/separation = 14
+alignment = 1
+
+[node name="Title" type="Label" parent="Root/Pause/Panel/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.95, 0.6, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 8
+theme_override_fonts/font = ExtResource("2_press")
+theme_override_font_sizes/font_size = 24
+text = "GAME PAUSED"
+horizontal_alignment = 1
+
+[node name="SoundRow" type="HBoxContainer" parent="Root/Pause/Panel/VBox"]
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_constants/separation = 16
+
+[node name="SoundLabel" type="Label" parent="Root/Pause/Panel/VBox/SoundRow"]
+custom_minimum_size = Vector2(140, 0)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.92, 0.96, 1, 0.95)
+theme_override_fonts/font = ExtResource("3_vt323")
+theme_override_font_sizes/font_size = 22
+text = "SOUND"
+vertical_alignment = 1
+
+[node name="SoundToggle" type="Button" parent="Root/Pause/Panel/VBox/SoundRow"]
+custom_minimum_size = Vector2(110, 44)
+layout_mode = 2
+toggle_mode = true
+button_pressed = true
+theme_override_fonts/font = ExtResource("2_press")
+theme_override_font_sizes/font_size = 13
+text = "ON"
+
+[node name="MusicRow" type="HBoxContainer" parent="Root/Pause/Panel/VBox"]
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_constants/separation = 16
+
+[node name="MusicLabel" type="Label" parent="Root/Pause/Panel/VBox/MusicRow"]
+custom_minimum_size = Vector2(140, 0)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.92, 0.96, 1, 0.95)
+theme_override_fonts/font = ExtResource("3_vt323")
+theme_override_font_sizes/font_size = 22
+text = "MUSIC"
+vertical_alignment = 1
+
+[node name="MusicToggle" type="Button" parent="Root/Pause/Panel/VBox/MusicRow"]
+custom_minimum_size = Vector2(110, 44)
+layout_mode = 2
+toggle_mode = true
+button_pressed = true
+theme_override_fonts/font = ExtResource("2_press")
+theme_override_font_sizes/font_size = 13
+text = "ON"
+
+[node name="Warning" type="Label" parent="Root/Pause/Panel/VBox"]
+custom_minimum_size = Vector2(380, 0)
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.75, 0.45, 1)
+theme_override_fonts/font = ExtResource("3_vt323")
+theme_override_font_sizes/font_size = 18
+horizontal_alignment = 1
+autowrap_mode = 2
+
+[node name="QuitButton" type="Button" parent="Root/Pause/Panel/VBox"]
+custom_minimum_size = Vector2(260, 48)
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_fonts/font = ExtResource("2_press")
+theme_override_font_sizes/font_size = 13
+text = "QUIT TO MENU"
+
+[node name="ActionsRow" type="HBoxContainer" parent="Root/Pause/Panel/VBox"]
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_constants/separation = 10
+
+[node name="RetryButton" type="Button" parent="Root/Pause/Panel/VBox/ActionsRow"]
+custom_minimum_size = Vector2(150, 56)
+layout_mode = 2
+theme_override_fonts/font = ExtResource("2_press")
+theme_override_font_sizes/font_size = 14
+text = "RETRY"
+
+[node name="ResumeButton" type="Button" parent="Root/Pause/Panel/VBox/ActionsRow"]
+custom_minimum_size = Vector2(150, 56)
+layout_mode = 2
+theme_override_fonts/font = ExtResource("2_press")
+theme_override_font_sizes/font_size = 14
+text = "RESUME"
 
 [node name="Transition" type="ColorRect" parent="Root"]
 anchor_right = 1.0

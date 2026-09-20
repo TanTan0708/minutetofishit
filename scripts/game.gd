@@ -134,6 +134,8 @@ func _ready() -> void:
 	hud.how_to_play_pressed.connect(_on_how_to_play_pressed)
 	hud.instructions_dismissed.connect(_on_instructions_dismissed)
 	hud.shop_pressed.connect(_on_shop_pressed)
+	hud.pause_retry_pressed.connect(_restart_run)
+	hud.pause_quit_pressed.connect(_return_to_home)
 
 	state = State.HOME
 	hud.show_home(SaveData.best_score, SaveData.money)
@@ -201,6 +203,7 @@ func _apply_powerups() -> void:
 	if _equipped_powerups.is_empty():
 		hud.set_hint("Drag anywhere to aim, release to fire   •   arrows to aim, Up/Down for power, Space to fire")
 		return
+	Audio.play("powerup")
 	var names: PackedStringArray = []
 	for id in _equipped_powerups:
 		names.append(SaveData.powerup_name(id))
@@ -217,7 +220,7 @@ func _unhandled_input(event: InputEvent) -> void:
 			hud.open_instructions(hide_instructions_pref)
 			return
 		if event.keycode == KEY_ESCAPE:
-			_return_to_home()
+			_handle_escape_key()
 			return
 	if not can_aim():
 		return
@@ -247,7 +250,49 @@ func _handle_restart_key() -> void:
 		return
 	_restart_armed = true
 	_restart_arm_timer = RESTART_CONFIRM_WINDOW
-	hud.show_message("Press R again to restart", Color(1.0, 0.65, 0.3), RESTART_CONFIRM_WINDOW)
+	Audio.play("warning")
+	hud.show_message("Press R again to restart" + _confirm_suffix(), Color(1.0, 0.65, 0.3),
+		RESTART_CONFIRM_WINDOW, 20)
+
+
+## Esc mid-run opens the pause menu (which is its own confirmation - Quit
+## there forfeits money/power-ups same as before). Once a run is already
+## over the results screen is showing, so Esc just goes straight back to
+## the menu - the run already banked whatever it earned, nothing to lose.
+func _handle_escape_key() -> void:
+	if state == State.HOME:
+		return
+	if state == State.OVER:
+		_return_to_home()
+		return
+	hud.open_pause(_pause_warning_text())
+
+
+## Money and power-ups only bank once a run actually finishes (_end_run) -
+## quitting or retrying mid-run forfeits both, so the pause menu spells
+## that out before the player commits to either button.
+func _pause_warning_text() -> String:
+	var losing: PackedStringArray = []
+	if earned > 0:
+		losing.append("$%d" % earned)
+	if not _equipped_powerups.is_empty():
+		losing.append("power-ups")
+	if losing.is_empty():
+		return "Your catch isn't banked until you finish this run (time up or boom)."
+	return "Quitting or retrying now forfeits " + " & ".join(losing) + " from this run!"
+
+
+## What restarting right now would cost - shown in the restart confirm
+## prompt so the warning is only as alarming as it needs to be.
+func _confirm_suffix() -> String:
+	var losing: PackedStringArray = []
+	if earned > 0:
+		losing.append("$%d" % earned)
+	if not _equipped_powerups.is_empty():
+		losing.append("power-ups")
+	if losing.is_empty():
+		return ""
+	return " - lose " + " & ".join(losing) + "!"
 
 
 ## Clears the current run's fish/spear/score/timer, without touching the
@@ -277,18 +322,22 @@ func _reset_run_state() -> void:
 	hud.clear_message()
 
 
+## Restarting forfeits any equipped power-ups (win/loss, they were paid
+## for that run and don't carry over) - go back to the home screen to
+## buy them again if you want them on the next attempt.
 func _restart_run() -> void:
 	hud.play_transition(func():
+		hud.clear_selected_powerups()
 		_reset_run_state()
 		_begin_run()
 	)
 
 
-## Esc: back to the title screen from anywhere in a run. Anything already
-## caught is banked first, so leaving to visit the shop never costs you money.
+## Esc: back to the title screen from anywhere in a run. Only a run that
+## actually finishes (_end_run, via TIME UP or BOOM) banks money - bailing
+## out early forfeits whatever this attempt earned, same as restarting.
 func _return_to_home() -> void:
-	if state != State.HOME and (caught > 0 or earned > 0):
-		SaveData.record_run(earned, caught)
+	hud.clear_selected_powerups()
 	_reset_run_state()
 	state = State.HOME
 	hud.set_hint("")
@@ -311,9 +360,11 @@ func _process(delta: float) -> void:
 			if step != _countdown_step and step >= 1:
 				_countdown_step = step
 				hud.show_message(str(step), Color(0.66, 0.94, 1.0), 0.75)
+				Audio.play("beep")
 			if _intro_timer <= 0.0:
 				state = State.FISHING
 				hud.show_message("GO!", Color(0.7, 0.98, 0.8), 0.6)
+				Audio.play("go")
 		State.FISHING:
 			if _frozen_time_left > 0.0:
 				_frozen_time_left -= delta
@@ -344,11 +395,10 @@ func _process(delta: float) -> void:
 
 
 func _update_restart_arm(delta: float) -> void:
-	if not _restart_armed:
-		return
-	_restart_arm_timer -= delta
-	if _restart_arm_timer <= 0.0:
-		_restart_armed = false
+	if _restart_armed:
+		_restart_arm_timer -= delta
+		if _restart_arm_timer <= 0.0:
+			_restart_armed = false
 
 
 func can_aim() -> bool:
@@ -408,6 +458,7 @@ func fire() -> void:
 	_spear.impact.connect(_on_spear_impact)
 	_spear.collected.connect(_on_spear_collected)
 	add_shake(4.0)
+	Audio.play("shoot", 0.05)
 	_burst(muzzle, Color(0.75, 0.95, 1.0, 0.5), 8, 150.0, 0.03, 0.1)
 
 
@@ -430,6 +481,7 @@ func _explode(fish: Fish) -> void:
 		_spear.freeze()
 	var blast: Vector2 = _spear.global_position
 	add_shake(34.0)
+	Audio.play("explosion")
 	_burst(blast, Color(1.0, 0.6, 0.2, 0.95), 70, 620.0, 0.1, 0.34)
 	_burst(blast, Color(1.0, 0.95, 0.65, 0.9), 40, 320.0, 0.12, 0.5)
 	_burst(blast, Color(0.4, 0.42, 0.45, 0.8), 30, 220.0, 0.25, 0.7)
@@ -450,6 +502,7 @@ func _on_spear_collected(fish: Fish) -> void:
 	hud.set_score(caught)
 	hud.set_earned(earned)
 	hud.set_wallet(SaveData.money + earned)
+	Audio.play("catch_gold" if kind == "golden" else "catch", 0.0 if kind == "golden" else 0.08)
 	_popup(fish.global_position + Vector2(0.0, -40.0), "+$%d" % gained, Color(1.0, 0.88, 0.4), 42)
 	_burst(fish.global_position, Color(1.0, 0.88, 0.4, 0.9), 16, 240.0, 0.05, 0.14)
 	if kind == "golden":
@@ -581,6 +634,7 @@ func _end_run(title: String, title_color: Color, note: String) -> void:
 	hud.set_hint("R to dive again   •   Esc for the menu")
 	hud.show_results(caught, SaveData.best_score, earned, SaveData.money, new_best,
 		title, title_color, note)
+	Audio.play("results")
 	add_shake(10.0)
 	_burst(sub.muzzle_position(), Color(0.7, 0.95, 1.0, 0.8), 14, 220.0, 0.04, 0.12)
 

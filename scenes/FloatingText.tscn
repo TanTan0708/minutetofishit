@@ -1,6 +1,7 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=3 format=3]
 
 [ext_resource type="Script" path="res://scripts/floating_text.gd" id="1_float"]
+[ext_resource type="FontFile" path="res://assets/fonts/PressStart2P.ttf" id="2_press"]
 
 [node name="FloatingText" type="Label"]
 z_index = 40
@@ -10,6 +11,7 @@ mouse_filter = 2
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_colors/font_outline_color = Color(0.02, 0.06, 0.1, 1)
 theme_override_constants/outline_size = 10
+theme_override_fonts/font = ExtResource("2_press")
 theme_override_font_sizes/font_size = 40
 horizontal_alignment = 1
 vertical_alignment = 1
