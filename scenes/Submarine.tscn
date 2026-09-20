@@ -8,4 +8,4 @@ script = ExtResource("1_sub")
 [node name="Sprite" type="Sprite2D" parent="."]
 
 [node name="Muzzle" type="Marker2D" parent="."]
-position = Vector2(104, -118)
+position = Vector2(112, -60)

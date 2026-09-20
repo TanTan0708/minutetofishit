@@ -1,33 +1,63 @@
 class_name HUD
 extends CanvasLayer
 
-## Run UI: score, countdown, catch counter, announcements and the results panel.
+## Run UI: home screen, instructions modal, score/countdown/catch readouts,
+## announcements, the results panel, and the run-start transition.
+## Every panel here is a PanelContainer + VBoxContainer, sized from real
+## font metrics rather than hand-picked pixel boxes - that's what keeps
+## text from ever clipping regardless of font/size tweaks.
+
+signal play_pressed
+signal how_to_play_pressed
+signal instructions_dismissed(dont_show_again: bool)
 
 const GOLD := Color(1.0, 0.85, 0.32, 1.0)
 const DANGER := Color(1.0, 0.42, 0.3, 1.0)
 
-@onready var score_value: Label = $Root/ScoreValue
-@onready var best_value: Label = $Root/BestValue
-@onready var time_value: Label = $Root/TimeValue
-@onready var time_bar: ColorRect = $Root/TimeBar
-@onready var caught_value: Label = $Root/CaughtValue
+@onready var score_panel: Control = $Root/TopBar/ScorePanel
+@onready var time_panel: Control = $Root/TopBar/TimePanel
+@onready var caught_panel: Control = $Root/TopBar/CaughtPanel
+@onready var score_value: Label = $Root/TopBar/ScorePanel/VBox/ScoreValue
+@onready var best_value: Label = $Root/TopBar/ScorePanel/VBox/BestValue
+@onready var time_value: Label = $Root/TopBar/TimePanel/VBox/TimeValue
+@onready var time_bar: ColorRect = $Root/TopBar/TimePanel/VBox/TimeBarWrap/TimeBar
+@onready var caught_value: Label = $Root/TopBar/CaughtPanel/VBox/CaughtValue
 @onready var message: Label = $Root/Message
 @onready var hint: Label = $Root/Hint
-@onready var results: Control = $Root/Results
-@onready var result_title: Label = $Root/Results/Title
-@onready var result_score: Label = $Root/Results/ScoreLine
-@onready var result_best: Label = $Root/Results/BestLine
-@onready var result_note: Label = $Root/Results/Note
-@onready var result_retry: Label = $Root/Results/Retry
 
-var _bar_full_width: float = 0.0
+@onready var results: Control = $Root/Results
+@onready var result_title: Label = $Root/Results/Panel/VBox/Title
+@onready var result_score: Label = $Root/Results/Panel/VBox/ScoreLine
+@onready var result_best: Label = $Root/Results/Panel/VBox/BestLine
+@onready var result_note: Label = $Root/Results/Panel/VBox/Note
+@onready var result_retry: Label = $Root/Results/Panel/VBox/Retry
+
+@onready var home: Control = $Root/Home
+@onready var home_best_label: Label = $Root/Home/Panel/VBox/BestLabel
+@onready var play_button: Button = $Root/Home/Panel/VBox/PlayButton
+@onready var how_to_button: Button = $Root/Home/Panel/VBox/HowToButton
+
+@onready var instructions: Control = $Root/Instructions
+@onready var dont_show_toggle: Button = $Root/Instructions/Panel/VBox/DontShowToggle
+@onready var close_button: Button = $Root/Instructions/Panel/VBox/CloseButton
+
+@onready var transition: ColorRect = $Root/Transition
+
 var _message_tween: Tween
 
 
 func _ready() -> void:
 	_ignore_mouse($Root)
-	_bar_full_width = time_bar.size.x
+	for btn in [play_button, how_to_button, dont_show_toggle, close_button]:
+		_style_button(btn)
+	play_button.pressed.connect(func(): play_pressed.emit())
+	how_to_button.pressed.connect(func(): how_to_play_pressed.emit())
+	dont_show_toggle.toggled.connect(_update_toggle_text)
+	close_button.pressed.connect(_close_instructions)
+
 	results.visible = false
+	home.visible = false
+	instructions.visible = false
 
 
 func _ignore_mouse(node: Node) -> void:
@@ -36,6 +66,46 @@ func _ignore_mouse(node: Node) -> void:
 	for child in node.get_children():
 		_ignore_mouse(child)
 
+
+func _style_button(btn: Button) -> void:
+	var normal := _button_style(Color(0.32, 0.20, 0.09, 0.95), Color(0.85, 0.7, 0.35, 1.0))
+	var hover := _button_style(Color(0.42, 0.27, 0.12, 0.95), Color(1.0, 0.85, 0.4, 1.0))
+	var pressed := _button_style(Color(0.22, 0.13, 0.05, 0.95), Color(0.85, 0.7, 0.35, 1.0))
+	btn.add_theme_stylebox_override("normal", normal)
+	btn.add_theme_stylebox_override("hover", hover)
+	btn.add_theme_stylebox_override("pressed", pressed)
+	btn.add_theme_stylebox_override("focus", normal)
+	btn.add_theme_color_override("font_color", Color(1, 0.96, 0.85))
+	btn.add_theme_color_override("font_hover_color", Color(1, 1, 0.92))
+	btn.add_theme_color_override("font_pressed_color", Color(1, 0.9, 0.6))
+	btn.mouse_filter = Control.MOUSE_FILTER_STOP
+	btn.resized.connect(func(): btn.pivot_offset = btn.size * 0.5)
+	btn.mouse_entered.connect(func(): _punch_scale(btn, 1.06))
+	btn.mouse_exited.connect(func(): _punch_scale(btn, 1.0))
+	btn.button_down.connect(func(): _punch_scale(btn, 0.94))
+	btn.button_up.connect(func(): _punch_scale(btn, 1.06 if btn.is_hovered() else 1.0))
+
+
+func _button_style(bg: Color, border: Color) -> StyleBoxFlat:
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = bg
+	sb.border_color = border
+	sb.set_border_width_all(3)
+	sb.set_corner_radius_all(6)
+	sb.set_content_margin_all(10)
+	return sb
+
+
+func _punch_scale(node: Control, s: float) -> void:
+	var tw := create_tween()
+	tw.tween_property(node, "scale", Vector2(s, s), 0.08).set_trans(Tween.TRANS_SINE)
+
+
+func _update_toggle_text(pressed: bool) -> void:
+	dont_show_toggle.text = ("[x]" if pressed else "[ ]") + "  Don't show this automatically again"
+
+
+# --------------------------------------------------------------- run HUD ---
 
 func set_score(value: int) -> void:
 	score_value.text = "$%d" % value
@@ -49,10 +119,12 @@ func set_caught(count: int) -> void:
 	caught_value.text = str(count)
 
 
+## time_bar fills by anchor fraction (not pixel width), so it's correct
+## no matter what width the panel actually resolves to.
 func set_time(seconds_left: float, total: float) -> void:
 	var left: float = maxf(seconds_left, 0.0)
 	time_value.text = str(int(ceil(left)))
-	time_bar.size.x = _bar_full_width * clampf(left / maxf(total, 0.001), 0.0, 1.0)
+	time_bar.anchor_right = clampf(left / maxf(total, 0.001), 0.0, 1.0)
 	var low: bool = left <= 10.0
 	time_bar.color = DANGER if low else Color(0.45, 0.9, 1.0, 1.0)
 	time_value.add_theme_color_override("font_color",
@@ -87,6 +159,36 @@ func set_hint(p_text: String) -> void:
 	hint.text = p_text
 
 
+## A little staggered pop for the score/time/caught panels when a run
+## actually starts, so the HUD feels like it "arrives" rather than just
+## being static the whole time.
+func animate_run_start() -> void:
+	var panels: Array[Control] = [score_panel, time_panel, caught_panel]
+	for i in panels.size():
+		var p: Control = panels[i]
+		p.pivot_offset = p.size * 0.5
+		p.scale = Vector2(0.3, 0.3)
+		var tw := create_tween()
+		tw.tween_interval(i * 0.08)
+		tw.tween_property(p, "scale", Vector2(1.1, 1.1), 0.16).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+		tw.tween_property(p, "scale", Vector2.ONE, 0.1)
+
+
+## A short black flash - hides whatever visual "pop" would otherwise
+## happen at the exact moment fish spawn in / the HUD resets, and gives
+## starting (or restarting) a run a small, deliberate beat instead of an
+## instant cut. `on_mid_flash` runs at the darkest point, so callers can
+## swap what's on screen while it's hidden.
+func play_transition(on_mid_flash: Callable) -> void:
+	transition.color = Color(0, 0, 0, 0)
+	transition.visible = true
+	var tw := create_tween()
+	tw.tween_property(transition, "color:a", 1.0, 0.14).set_trans(Tween.TRANS_SINE)
+	tw.tween_callback(on_mid_flash)
+	tw.tween_property(transition, "color:a", 0.0, 0.26).set_trans(Tween.TRANS_SINE)
+	tw.tween_callback(func(): transition.visible = false)
+
+
 func show_results(score: int, best: int, is_new_best: bool, title: String,
 		title_color: Color, note: String) -> void:
 	result_title.text = title
@@ -102,8 +204,12 @@ func show_results(score: int, best: int, is_new_best: bool, title: String,
 	result_retry.text = "Press R to dive again"
 	results.visible = true
 	results.modulate.a = 0.0
+	var panel: Control = $Root/Results/Panel
+	panel.scale = Vector2(0.85, 0.85)
+	panel.pivot_offset = panel.size * 0.5
 	var t: Tween = create_tween()
 	t.tween_property(results, "modulate:a", 1.0, 0.25)
+	t.parallel().tween_property(panel, "scale", Vector2.ONE, 0.25).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 
 
 func hide_results() -> void:
@@ -111,9 +217,55 @@ func hide_results() -> void:
 	results.modulate.a = 1.0
 
 
+# ---------------------------------------------------------------- home ----
+
+func show_home(best: int) -> void:
+	home_best_label.text = "BEST  $%d" % best
+	home.visible = true
+	home.modulate.a = 0.0
+	var panel: Control = $Root/Home/Panel
+	panel.scale = Vector2(0.92, 0.92)
+	panel.pivot_offset = panel.size * 0.5
+	var tw := create_tween()
+	tw.tween_property(home, "modulate:a", 1.0, 0.3)
+	tw.parallel().tween_property(panel, "scale", Vector2.ONE, 0.3).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 
 
+func hide_home() -> void:
+	home.visible = false
 
 
+# ----------------------------------------------------------- instructions --
+
+## Always pauses the tree while open - this node runs with
+## process_mode = ALWAYS, so its own buttons/input keep working, while the
+## paused world (fish, spear, timers) correctly freezes underneath.
+func open_instructions(dont_show_pref: bool) -> void:
+	dont_show_toggle.button_pressed = dont_show_pref
+	_update_toggle_text(dont_show_pref)
+	instructions.visible = true
+	instructions.modulate.a = 0.0
+	var panel: Control = $Root/Instructions/Panel
+	panel.scale = Vector2(0.92, 0.92)
+	panel.pivot_offset = panel.size * 0.5
+	var tw := create_tween()
+	tw.tween_property(instructions, "modulate:a", 1.0, 0.2)
+	tw.parallel().tween_property(panel, "scale", Vector2.ONE, 0.2).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	get_tree().paused = true
 
 
+func _close_instructions() -> void:
+	instructions.visible = false
+	get_tree().paused = false
+	instructions_dismissed.emit(dont_show_toggle.button_pressed)
+
+
+## Lets Game close the panel itself (e.g. the F1 hotkey) without
+## re-emitting the dismissed signal a second time.
+func _unhandled_input(event: InputEvent) -> void:
+	if not instructions.visible:
+		return
+	if event is InputEventKey and event.pressed and not event.echo:
+		if event.keycode == KEY_F1 or event.keycode == KEY_ESCAPE:
+			_close_instructions()
+			get_viewport().set_input_as_handled()

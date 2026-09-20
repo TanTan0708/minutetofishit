@@ -1,8 +1,24 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=7 format=3]
 
 [ext_resource type="Script" path="res://scripts/hud.gd" id="1_hud"]
+[ext_resource type="FontFile" path="res://assets/fonts/PressStart2P.ttf" id="2_press"]
+[ext_resource type="FontFile" path="res://assets/fonts/VT323.ttf" id="3_vt323"]
+[ext_resource type="Texture2D" path="res://assets/generated/ui_panel.png" id="4_panel"]
+[ext_resource type="Texture2D" path="res://assets/generated/logo.png" id="5_logo"]
+
+[sub_resource type="StyleBoxTexture" id="panel_sb"]
+texture = ExtResource("4_panel")
+texture_margin_left = 16.0
+texture_margin_top = 16.0
+texture_margin_right = 16.0
+texture_margin_bottom = 16.0
+content_margin_left = 18.0
+content_margin_top = 14.0
+content_margin_right = 18.0
+content_margin_bottom = 14.0
 
 [node name="HUD" type="CanvasLayer"]
+process_mode = 3
 script = ExtResource("1_hud")
 
 [node name="Root" type="Control" parent="."]
@@ -10,111 +26,132 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 mouse_filter = 2
 
-[node name="ScoreBG" type="ColorRect" parent="Root"]
+[node name="TopBar" type="HBoxContainer" parent="Root"]
+anchor_right = 1.0
 offset_left = 24.0
 offset_top = 18.0
-offset_right = 344.0
-offset_bottom = 116.0
-mouse_filter = 2
-color = Color(0.03, 0.09, 0.16, 0.72)
+offset_right = -24.0
+offset_bottom = 150.0
+theme_override_constants/separation = 12
 
-[node name="ScoreTitle" type="Label" parent="Root"]
-offset_left = 40.0
-offset_top = 26.0
-offset_right = 328.0
-offset_bottom = 48.0
+[node name="ScorePanel" type="PanelContainer" parent="Root/TopBar"]
+custom_minimum_size = Vector2(260, 0)
+layout_mode = 2
+size_flags_vertical = 0
+theme_override_styles/panel = SubResource("panel_sb")
+
+[node name="VBox" type="VBoxContainer" parent="Root/TopBar/ScorePanel"]
+layout_mode = 2
+theme_override_constants/separation = 2
+
+[node name="ScoreTitle" type="Label" parent="Root/TopBar/ScorePanel/VBox"]
+layout_mode = 2
 theme_override_colors/font_color = Color(0.7, 0.9, 1, 0.85)
-theme_override_font_sizes/font_size = 15
+theme_override_fonts/font = ExtResource("3_vt323")
+theme_override_font_sizes/font_size = 18
 text = "SCORE"
 
-[node name="ScoreValue" type="Label" parent="Root"]
-offset_left = 40.0
-offset_top = 46.0
-offset_right = 328.0
-offset_bottom = 90.0
+[node name="ScoreValue" type="Label" parent="Root/TopBar/ScorePanel/VBox"]
+layout_mode = 2
 theme_override_colors/font_color = Color(1, 0.9, 0.45, 1)
 theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
 theme_override_constants/outline_size = 6
-theme_override_font_sizes/font_size = 34
+theme_override_fonts/font = ExtResource("2_press")
+theme_override_font_sizes/font_size = 22
 text = "$0"
-vertical_alignment = 1
 
-[node name="BestValue" type="Label" parent="Root"]
-offset_left = 40.0
-offset_top = 92.0
-offset_right = 328.0
-offset_bottom = 112.0
+[node name="BestValue" type="Label" parent="Root/TopBar/ScorePanel/VBox"]
+layout_mode = 2
 theme_override_colors/font_color = Color(0.8, 0.9, 1, 0.75)
-theme_override_font_sizes/font_size = 15
+theme_override_fonts/font = ExtResource("3_vt323")
+theme_override_font_sizes/font_size = 18
 text = "BEST  $0"
 
-[node name="TimeBG" type="ColorRect" parent="Root"]
-offset_left = 446.0
-offset_top = 18.0
-offset_right = 706.0
-offset_bottom = 104.0
-mouse_filter = 2
-color = Color(0.03, 0.09, 0.16, 0.72)
+[node name="Spacer1" type="Control" parent="Root/TopBar"]
+layout_mode = 2
+size_flags_horizontal = 3
 
-[node name="TimeValue" type="Label" parent="Root"]
-offset_left = 446.0
-offset_top = 26.0
-offset_right = 706.0
-offset_bottom = 74.0
+[node name="TimePanel" type="PanelContainer" parent="Root/TopBar"]
+custom_minimum_size = Vector2(240, 0)
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 0
+theme_override_styles/panel = SubResource("panel_sb")
+
+[node name="VBox" type="VBoxContainer" parent="Root/TopBar/TimePanel"]
+layout_mode = 2
+theme_override_constants/separation = 6
+alignment = 1
+
+[node name="TimeValue" type="Label" parent="Root/TopBar/TimePanel/VBox"]
+layout_mode = 2
 theme_override_colors/font_color = Color(0.95, 0.99, 1, 1)
 theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
 theme_override_constants/outline_size = 6
-theme_override_font_sizes/font_size = 36
+theme_override_fonts/font = ExtResource("2_press")
+theme_override_font_sizes/font_size = 26
 text = "60"
 horizontal_alignment = 1
-vertical_alignment = 1
 
-[node name="TimeBarBG" type="ColorRect" parent="Root"]
-offset_left = 466.0
-offset_top = 80.0
-offset_right = 686.0
-offset_bottom = 94.0
-mouse_filter = 2
+[node name="TimeBarWrap" type="Control" parent="Root/TopBar/TimePanel/VBox"]
+custom_minimum_size = Vector2(0, 18)
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Outline" type="ColorRect" parent="Root/TopBar/TimePanel/VBox/TimeBarWrap"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color(0.05, 0.03, 0.02, 1)
+
+[node name="TimeBarBG" type="ColorRect" parent="Root/TopBar/TimePanel/VBox/TimeBarWrap"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 2.0
+offset_top = 2.0
+offset_right = -2.0
+offset_bottom = -2.0
 color = Color(0.02, 0.05, 0.09, 0.85)
 
-[node name="TimeBar" type="ColorRect" parent="Root"]
-offset_left = 466.0
-offset_top = 80.0
-offset_right = 686.0
-offset_bottom = 94.0
-mouse_filter = 2
+[node name="TimeBar" type="ColorRect" parent="Root/TopBar/TimePanel/VBox/TimeBarWrap"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 2.0
+offset_top = 2.0
+offset_right = -2.0
+offset_bottom = -2.0
 color = Color(0.45, 0.9, 1, 1)
 
-[node name="CaughtBG" type="ColorRect" parent="Root"]
-offset_left = 808.0
-offset_top = 18.0
-offset_right = 1128.0
-offset_bottom = 116.0
-mouse_filter = 2
-color = Color(0.03, 0.09, 0.16, 0.72)
+[node name="Spacer2" type="Control" parent="Root/TopBar"]
+layout_mode = 2
+size_flags_horizontal = 3
 
-[node name="CaughtTitle" type="Label" parent="Root"]
-offset_left = 824.0
-offset_top = 26.0
-offset_right = 1112.0
-offset_bottom = 48.0
+[node name="CaughtPanel" type="PanelContainer" parent="Root/TopBar"]
+custom_minimum_size = Vector2(260, 0)
+layout_mode = 2
+size_flags_vertical = 0
+theme_override_styles/panel = SubResource("panel_sb")
+
+[node name="VBox" type="VBoxContainer" parent="Root/TopBar/CaughtPanel"]
+layout_mode = 2
+theme_override_constants/separation = 2
+
+[node name="CaughtTitle" type="Label" parent="Root/TopBar/CaughtPanel/VBox"]
+layout_mode = 2
 theme_override_colors/font_color = Color(0.7, 0.9, 1, 0.85)
-theme_override_font_sizes/font_size = 15
+theme_override_fonts/font = ExtResource("3_vt323")
+theme_override_font_sizes/font_size = 18
 text = "CAUGHT"
 horizontal_alignment = 2
 
-[node name="CaughtValue" type="Label" parent="Root"]
-offset_left = 824.0
-offset_top = 46.0
-offset_right = 1112.0
-offset_bottom = 90.0
+[node name="CaughtValue" type="Label" parent="Root/TopBar/CaughtPanel/VBox"]
+layout_mode = 2
 theme_override_colors/font_color = Color(0.75, 1, 0.85, 1)
 theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
 theme_override_constants/outline_size = 6
-theme_override_font_sizes/font_size = 34
+theme_override_fonts/font = ExtResource("2_press")
+theme_override_font_sizes/font_size = 22
 text = "0"
 horizontal_alignment = 2
-vertical_alignment = 1
 
 [node name="Message" type="Label" parent="Root"]
 offset_top = 224.0
@@ -122,8 +159,9 @@ offset_right = 1152.0
 offset_bottom = 314.0
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_colors/font_outline_color = Color(0.02, 0.06, 0.1, 1)
-theme_override_constants/outline_size = 12
-theme_override_font_sizes/font_size = 60
+theme_override_constants/outline_size = 10
+theme_override_fonts/font = ExtResource("2_press")
+theme_override_font_sizes/font_size = 40
 horizontal_alignment = 1
 vertical_alignment = 1
 
@@ -134,7 +172,8 @@ offset_bottom = 604.0
 theme_override_colors/font_color = Color(0.88, 0.96, 1, 0.88)
 theme_override_colors/font_outline_color = Color(0, 0, 0, 0.8)
 theme_override_constants/outline_size = 6
-theme_override_font_sizes/font_size = 18
+theme_override_fonts/font = ExtResource("3_vt323")
+theme_override_font_sizes/font_size = 22
 horizontal_alignment = 1
 vertical_alignment = 1
 
@@ -149,68 +188,227 @@ offset_bottom = 648.0
 mouse_filter = 2
 color = Color(0.01, 0.04, 0.08, 0.66)
 
-[node name="Panel" type="ColorRect" parent="Root/Results"]
-offset_left = 326.0
-offset_top = 156.0
-offset_right = 826.0
-offset_bottom = 496.0
-mouse_filter = 2
-color = Color(0.04, 0.12, 0.2, 0.95)
+[node name="Panel" type="PanelContainer" parent="Root/Results"]
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -260.0
+offset_top = -170.0
+offset_right = 260.0
+offset_bottom = 170.0
+grow_horizontal = 2
+grow_vertical = 2
+custom_minimum_size = Vector2(520, 0)
+theme_override_styles/panel = SubResource("panel_sb")
 
-[node name="Title" type="Label" parent="Root/Results"]
-offset_left = 326.0
-offset_top = 182.0
-offset_right = 826.0
-offset_bottom = 246.0
+[node name="VBox" type="VBoxContainer" parent="Root/Results/Panel"]
+layout_mode = 2
+theme_override_constants/separation = 12
+alignment = 1
+
+[node name="Title" type="Label" parent="Root/Results/Panel/VBox"]
+layout_mode = 2
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
 theme_override_constants/outline_size = 8
-theme_override_font_sizes/font_size = 44
+theme_override_fonts/font = ExtResource("2_press")
+theme_override_font_sizes/font_size = 30
 text = "TIME UP"
 horizontal_alignment = 1
-vertical_alignment = 1
 
-[node name="ScoreLine" type="Label" parent="Root/Results"]
-offset_left = 326.0
-offset_top = 260.0
-offset_right = 826.0
-offset_bottom = 316.0
+[node name="ScoreLine" type="Label" parent="Root/Results/Panel/VBox"]
+layout_mode = 2
 theme_override_colors/font_color = Color(1, 0.9, 0.45, 1)
 theme_override_colors/font_outline_color = Color(0, 0, 0, 0.8)
 theme_override_constants/outline_size = 6
-theme_override_font_sizes/font_size = 34
+theme_override_fonts/font = ExtResource("2_press")
+theme_override_font_sizes/font_size = 26
 text = "SCORE    $0"
 horizontal_alignment = 1
-vertical_alignment = 1
 
-[node name="BestLine" type="Label" parent="Root/Results"]
-offset_left = 326.0
-offset_top = 322.0
-offset_right = 826.0
-offset_bottom = 354.0
+[node name="BestLine" type="Label" parent="Root/Results/Panel/VBox"]
+layout_mode = 2
 theme_override_colors/font_color = Color(0.85, 0.92, 1, 0.9)
-theme_override_font_sizes/font_size = 20
+theme_override_fonts/font = ExtResource("3_vt323")
+theme_override_font_sizes/font_size = 22
 text = "BEST     $0"
 horizontal_alignment = 1
-vertical_alignment = 1
 
-[node name="Note" type="Label" parent="Root/Results"]
-offset_left = 326.0
-offset_top = 362.0
-offset_right = 826.0
-offset_bottom = 398.0
+[node name="Note" type="Label" parent="Root/Results/Panel/VBox"]
+layout_mode = 2
 theme_override_colors/font_color = Color(0.8, 0.88, 0.98, 0.9)
+theme_override_fonts/font = ExtResource("3_vt323")
 theme_override_font_sizes/font_size = 22
 horizontal_alignment = 1
-vertical_alignment = 1
+autowrap_mode = 2
 
-[node name="Retry" type="Label" parent="Root/Results"]
-offset_left = 326.0
-offset_top = 420.0
-offset_right = 826.0
-offset_bottom = 462.0
+[node name="Retry" type="Label" parent="Root/Results/Panel/VBox"]
+layout_mode = 2
 theme_override_colors/font_color = Color(0.7, 0.95, 1, 0.95)
-theme_override_font_sizes/font_size = 20
+theme_override_fonts/font = ExtResource("3_vt323")
+theme_override_font_sizes/font_size = 22
 text = "Press R to dive again"
 horizontal_alignment = 1
-vertical_alignment = 1
+
+[node name="Home" type="Control" parent="Root"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+
+[node name="Dim" type="ColorRect" parent="Root/Home"]
+offset_right = 1152.0
+offset_bottom = 648.0
+mouse_filter = 2
+color = Color(0.01, 0.04, 0.08, 0.55)
+
+[node name="Panel" type="PanelContainer" parent="Root/Home"]
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -280.0
+offset_top = -200.0
+offset_right = 280.0
+offset_bottom = 200.0
+grow_horizontal = 2
+grow_vertical = 2
+custom_minimum_size = Vector2(560, 0)
+theme_override_styles/panel = SubResource("panel_sb")
+
+[node name="VBox" type="VBoxContainer" parent="Root/Home/Panel"]
+layout_mode = 2
+theme_override_constants/separation = 14
+alignment = 1
+
+[node name="Title" type="TextureRect" parent="Root/Home/Panel/VBox"]
+custom_minimum_size = Vector2(0, 100)
+layout_mode = 2
+texture = ExtResource("5_logo")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Tagline" type="Label" parent="Root/Home/Panel/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.85, 0.95, 1, 0.9)
+theme_override_fonts/font = ExtResource("3_vt323")
+theme_override_font_sizes/font_size = 22
+text = "Spear fish. Beat the clock. Don't touch the bombs."
+horizontal_alignment = 1
+autowrap_mode = 2
+
+[node name="BestLabel" type="Label" parent="Root/Home/Panel/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.85, 0.32, 1)
+theme_override_fonts/font = ExtResource("3_vt323")
+theme_override_font_sizes/font_size = 20
+text = "BEST  $0"
+horizontal_alignment = 1
+
+[node name="Spacer" type="Control" parent="Root/Home/Panel/VBox"]
+custom_minimum_size = Vector2(0, 6)
+layout_mode = 2
+
+[node name="PlayButton" type="Button" parent="Root/Home/Panel/VBox"]
+custom_minimum_size = Vector2(260, 56)
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_fonts/font = ExtResource("2_press")
+theme_override_font_sizes/font_size = 18
+text = "PLAY"
+
+[node name="HowToButton" type="Button" parent="Root/Home/Panel/VBox"]
+custom_minimum_size = Vector2(260, 48)
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_fonts/font = ExtResource("2_press")
+theme_override_font_sizes/font_size = 14
+text = "HOW TO PLAY"
+
+[node name="HotkeyHint" type="Label" parent="Root/Home/Panel/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.7, 0.85, 0.95, 0.75)
+theme_override_fonts/font = ExtResource("3_vt323")
+theme_override_font_sizes/font_size = 18
+text = "Press F1 anytime for help"
+horizontal_alignment = 1
+
+[node name="Instructions" type="Control" parent="Root"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+visible = false
+
+[node name="Dim" type="ColorRect" parent="Root/Instructions"]
+offset_right = 1152.0
+offset_bottom = 648.0
+mouse_filter = 2
+color = Color(0.01, 0.04, 0.08, 0.66)
+
+[node name="Panel" type="PanelContainer" parent="Root/Instructions"]
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -340.0
+offset_top = -220.0
+offset_right = 340.0
+offset_bottom = 220.0
+grow_horizontal = 2
+grow_vertical = 2
+custom_minimum_size = Vector2(680, 0)
+theme_override_styles/panel = SubResource("panel_sb")
+
+[node name="VBox" type="VBoxContainer" parent="Root/Instructions/Panel"]
+layout_mode = 2
+theme_override_constants/separation = 12
+alignment = 1
+
+[node name="Title" type="Label" parent="Root/Instructions/Panel/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.95, 0.6, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 8
+theme_override_fonts/font = ExtResource("2_press")
+theme_override_font_sizes/font_size = 22
+text = "HOW TO PLAY"
+horizontal_alignment = 1
+
+[node name="Body" type="Label" parent="Root/Instructions/Panel/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.92, 0.96, 1, 0.95)
+theme_override_fonts/font = ExtResource("3_vt323")
+theme_override_font_sizes/font_size = 21
+text = "• Drag anywhere and release to aim & fire your speargun
+• Or use arrow keys to aim, Up/Down for power, Space to fire
+• Reel in fish for cash - bigger and rarer fish pay more
+• Golden fish are the jackpot; fast fish dart away quickly
+• Bomb fish end your run instantly - don't spear them!
+• Press R to restart a run (press it twice to confirm)
+• Press Esc to go back to the title screen
+• Press F1 anytime to see this screen again"
+horizontal_alignment = 0
+autowrap_mode = 3
+custom_minimum_size = Vector2(600, 0)
+
+[node name="DontShowToggle" type="Button" parent="Root/Instructions/Panel/VBox"]
+custom_minimum_size = Vector2(340, 42)
+layout_mode = 2
+size_flags_horizontal = 4
+toggle_mode = true
+theme_override_fonts/font = ExtResource("3_vt323")
+theme_override_font_sizes/font_size = 20
+text = "[ ]  Don't show this automatically again"
+
+[node name="CloseButton" type="Button" parent="Root/Instructions/Panel/VBox"]
+custom_minimum_size = Vector2(220, 52)
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_fonts/font = ExtResource("2_press")
+theme_override_font_sizes/font_size = 16
+text = "GOT IT"
+
+[node name="Transition" type="ColorRect" parent="Root"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+color = Color(0, 0, 0, 0)
+visible = false
