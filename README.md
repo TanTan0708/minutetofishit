@@ -18,7 +18,7 @@ Minute to Fish It is a 2D arcade score-attack game built in Godot 4. Pilot a lit
 - Golden fish are the jackpot; fast fish dart away quickly
 - Bomb fish end your run instantly — don't spear them!
 - Press **R** to restart a run (press it twice to confirm)
-- Press **Esc** to return to the title screen
+- Press **Esc** to pause — resume, retry, or quit to the title screen from there
 - Press **F1** anytime to see the instructions again
 
 ## Concept art
@@ -39,3 +39,5 @@ Minute to Fish It is a 2D arcade score-attack game built in Godot 4. Pilot a lit
 - [Godot Engine](https://godotengine.org/) 4.7 (GL Compatibility renderer)
 - GDScript
 - [Press Start 2P](https://fonts.google.com/specimen/Press+Start+2P) and [VT323](https://fonts.google.com/specimen/VT323) (SIL Open Font License)
+- Background music: ["Underclocked"](https://ericskiff.com/music/) by Eric Skiff, licensed [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)
+- Sound effects: procedurally synthesized in-engine, no external audio files
