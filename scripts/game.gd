@@ -5,8 +5,9 @@ extends Node2D
 ## money. A run lasts one minute; the best score is kept between runs.
 
 const RUN_SECONDS := 60.0
-const INTRO_SECONDS := 1.8
+const COUNTDOWN_SECONDS := 3.0
 const BOOM_SEQUENCE := 1.6
+const RESTART_CONFIRM_WINDOW := 3.0
 
 const GRAVITY := 460.0
 const WATER_DRAG := 0.85
@@ -30,7 +31,7 @@ const START_FISH := 5
 const REEL_BASE_SPEED := 1500.0
 const SAVE_PATH := "user://minute_to_fish_best.cfg"
 
-enum State { READY, FISHING, BOOM, OVER }
+enum State { HOME, READY, FISHING, BOOM, OVER }
 
 const FISH_TYPES := {
 	"small": {
@@ -73,22 +74,27 @@ const SPARK_TEXTURE := preload("res://assets/generated/spark.png")
 @onready var camera: Camera2D = $Camera2D
 @onready var hud: HUD = $HUD
 
-var state: State = State.READY
+var state: State = State.HOME
 var score: int = 0
 var best: int = 0
 var caught: int = 0
 var time_left: float = RUN_SECONDS
 var aim_angle: float = -72.0
 var aim_power: float = 0.62
+var hide_instructions_pref: bool = false
 
 var _rng: RandomNumberGenerator = RandomNumberGenerator.new()
 var _dragging: bool = false
 var _drag_origin: Vector2 = Vector2.ZERO
-var _intro_timer: float = INTRO_SECONDS
+var _intro_timer: float = COUNTDOWN_SECONDS
+var _countdown_step: int = -1
 var _boom_timer: float = BOOM_SEQUENCE
 var _spawn_timer: float = 0.4
 var _shake: float = 0.0
 var _spear: Spear = null
+var _awaiting_first_play: bool = false
+var _restart_armed: bool = false
+var _restart_arm_timer: float = 0.0
 ## Fish art lives here, loaded through _load_texture() so a freshly generated
 ## png still works before the editor has imported it.
 var _fish_textures: Dictionary = {}
@@ -99,23 +105,68 @@ func _ready() -> void:
 	for key in FISH_TYPES:
 		_fish_textures[key] = _load_texture(str(FISH_TYPES[key]["path"]))
 	best = _load_best()
+	hide_instructions_pref = _load_hide_instructions_pref()
 	hud.set_best(best)
 	hud.set_score(0)
 	hud.set_caught(0)
 	hud.set_time(RUN_SECONDS, RUN_SECONDS)
 	hud.hide_results()
 	hud.set_hint("Drag anywhere to aim, release to fire   •   arrows to aim, Up/Down for power, Space to fire")
-	hud.show_message("GET READY", Color(0.66, 0.94, 1.0), 1.2)
 	rope.visible = false
+
+	hud.play_pressed.connect(_on_play_pressed)
+	hud.how_to_play_pressed.connect(_on_how_to_play_pressed)
+	hud.instructions_dismissed.connect(_on_instructions_dismissed)
+
+	state = State.HOME
+	hud.show_home(best)
+
+
+func _on_play_pressed() -> void:
+	hud.hide_home()
+	if hide_instructions_pref:
+		hud.play_transition(_begin_run)
+	else:
+		_awaiting_first_play = true
+		hud.open_instructions(hide_instructions_pref)
+
+
+func _on_how_to_play_pressed() -> void:
+	_awaiting_first_play = false
+	hud.open_instructions(hide_instructions_pref)
+
+
+func _on_instructions_dismissed(dont_show_again: bool) -> void:
+	if dont_show_again != hide_instructions_pref:
+		hide_instructions_pref = dont_show_again
+		_save_hide_instructions_pref()
+	if _awaiting_first_play:
+		_awaiting_first_play = false
+		hud.play_transition(_begin_run)
+
+
+## Starts an actual 60s run: spawns the opening fish, kicks off the 3-2-1-GO
+## countdown (aiming/firing early skips straight to FISHING, same as before).
+func _begin_run() -> void:
+	state = State.READY
+	_intro_timer = COUNTDOWN_SECONDS
+	_countdown_step = -1
 	for i in START_FISH:
 		_spawn_fish(_rng.randf_range(90.0, 1060.0))
-
+	hud.animate_run_start()
 
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo:
 		if event.keycode == KEY_R:
-			get_tree().reload_current_scene()
+			_handle_restart_key()
+			return
+		if event.keycode == KEY_F1:
+			_awaiting_first_play = false
+			hud.open_instructions(hide_instructions_pref)
+			return
+		if event.keycode == KEY_ESCAPE:
+			_return_to_home()
 			return
 	if not can_aim():
 		return
@@ -132,6 +183,59 @@ func _unhandled_input(event: InputEvent) -> void:
 		_aim_from_drag(_screen_to_world(event.position))
 
 
+## First R press arms a confirmation (and shows a prompt); a second press
+## within the window actually restarts - straight back into a fresh run,
+## without dropping to the home screen. Does nothing on the home screen
+## itself (there's no run yet to restart there).
+func _handle_restart_key() -> void:
+	if state == State.HOME:
+		return
+	if _restart_armed:
+		_restart_armed = false
+		_restart_run()
+		return
+	_restart_armed = true
+	_restart_arm_timer = RESTART_CONFIRM_WINDOW
+	hud.show_message("Press R again to restart", Color(1.0, 0.65, 0.3), RESTART_CONFIRM_WINDOW)
+
+
+## Clears the current run's fish/spear/score/timer, without touching the
+## home screen or instructions - used by both restart (R) and going back
+## to the menu (Esc), which then decide what to show next.
+func _reset_run_state() -> void:
+	for child in fish_root.get_children():
+		child.queue_free()
+	if _spear != null and is_instance_valid(_spear):
+		_spear.queue_free()
+	_spear = null
+	rope.visible = false
+	_dragging = false
+	preview.enabled = false
+	_restart_armed = false
+	score = 0
+	caught = 0
+	time_left = RUN_SECONDS
+	hud.set_score(0)
+	hud.set_caught(0)
+	hud.set_time(RUN_SECONDS, RUN_SECONDS)
+	hud.hide_results()
+	hud.clear_message()
+
+
+func _restart_run() -> void:
+	hud.play_transition(func():
+		_reset_run_state()
+		_begin_run()
+	)
+
+
+## Esc: back to the title screen from anywhere in a run.
+func _return_to_home() -> void:
+	_reset_run_state()
+	state = State.HOME
+	hud.show_home(best)
+
+
 ## Screen (viewport) point to world point, following the camera.
 func _screen_to_world(screen_position: Vector2) -> Vector2:
 	return get_viewport().get_canvas_transform().affine_inverse() * screen_position
@@ -139,10 +243,15 @@ func _screen_to_world(screen_position: Vector2) -> Vector2:
 
 func _process(delta: float) -> void:
 	_update_shake(delta)
+	_update_restart_arm(delta)
 
 	match state:
 		State.READY:
 			_intro_timer -= delta
+			var step: int = int(ceil(_intro_timer))
+			if step != _countdown_step and step >= 1:
+				_countdown_step = step
+				hud.show_message(str(step), Color(0.66, 0.94, 1.0), 0.75)
 			if _intro_timer <= 0.0:
 				state = State.FISHING
 				hud.show_message("GO!", Color(0.7, 0.98, 0.8), 0.6)
@@ -158,17 +267,24 @@ func _process(delta: float) -> void:
 			if _boom_timer <= 0.0:
 				_end_run("BOOM!", Color(1.0, 0.45, 0.28), "A bomb fish blew up your sub")
 
-	_spawn_timer -= delta
-	if _spawn_timer <= 0.0:
-		_spawn_timer = _rng.randf_range(SPAWN_MIN, SPAWN_MAX)
-		if fish_root.get_child_count() < MAX_FISH:
-			_spawn_fish(-1.0)
-	_cull_fish()
-
 	if can_aim():
+		_spawn_timer -= delta
+		if _spawn_timer <= 0.0:
+			_spawn_timer = _rng.randf_range(SPAWN_MIN, SPAWN_MAX)
+			if fish_root.get_child_count() < MAX_FISH:
+				_spawn_fish(-1.0)
 		_keyboard_aim(delta)
+	_cull_fish()
 	_refresh_preview()
 	_update_rope()
+
+
+func _update_restart_arm(delta: float) -> void:
+	if not _restart_armed:
+		return
+	_restart_arm_timer -= delta
+	if _restart_arm_timer <= 0.0:
+		_restart_armed = false
 
 
 func can_aim() -> bool:
@@ -469,5 +585,20 @@ func _load_best() -> int:
 
 func _save_best() -> void:
 	var config: ConfigFile = ConfigFile.new()
+	config.load(SAVE_PATH) # keep any other keys (e.g. prefs) already in the file
 	config.set_value("score", "best", best)
+	config.save(SAVE_PATH)
+
+
+func _load_hide_instructions_pref() -> bool:
+	var config: ConfigFile = ConfigFile.new()
+	if config.load(SAVE_PATH) == OK:
+		return bool(config.get_value("prefs", "hide_instructions", false))
+	return false
+
+
+func _save_hide_instructions_pref() -> void:
+	var config: ConfigFile = ConfigFile.new()
+	config.load(SAVE_PATH) # keep any other keys (e.g. best score) already in the file
+	config.set_value("prefs", "hide_instructions", hide_instructions_pref)
 	config.save(SAVE_PATH)
