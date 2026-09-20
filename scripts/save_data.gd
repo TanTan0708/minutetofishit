@@ -43,6 +43,30 @@ const SKINS := {
 	},
 }
 
+## Power-ups: NOT owned like skins - each run you pay again for whatever
+## you want equipped, same as a Subway Surfers-style loadout pick. Nothing
+## here is persisted; only the wallet that pays for them is.
+const POWERUP_ORDER := ["frozen_time", "multiplier", "gold_rush", "rapid_fire"]
+
+const POWERUPS := {
+	"frozen_time": {
+		"name": "FROZEN TIME", "price": 120,
+		"blurb": "Clock stays frozen for the first 10s of the run.",
+	},
+	"multiplier": {
+		"name": "2X MULTIPLIER", "price": 180,
+		"blurb": "Every dollar you earn this run is doubled.",
+	},
+	"gold_rush": {
+		"name": "GOLD RUSH", "price": 260,
+		"blurb": "Every fish that spawns this run is golden.",
+	},
+	"rapid_fire": {
+		"name": "RAPID FIRE", "price": 140,
+		"blurb": "Your spear reels back in a flash - fire much faster.",
+	},
+}
+
 var money: int = 0
 var best_score: int = 0
 var runs_played: int = 0
@@ -143,6 +167,30 @@ func equip(id: String) -> bool:
 	if not owns(id):
 		return false
 	equipped_skin = id
+	save_profile()
+	return true
+
+
+func powerup(id: String) -> Dictionary:
+	return POWERUPS.get(id, {})
+
+
+func powerup_name(id: String) -> String:
+	return str(powerup(id).get("name", id))
+
+
+func powerup_price(id: String) -> int:
+	return int(powerup(id).get("price", 0))
+
+
+## Spends straight from the wallet - used to pay for a run's equipped
+## power-ups. Returns false (and spends nothing) if you can't afford it.
+func spend(amount: int) -> bool:
+	if amount <= 0:
+		return true
+	if money < amount:
+		return false
+	money -= amount
 	save_profile()
 	return true
 

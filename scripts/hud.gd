@@ -36,11 +36,17 @@ const DANGER := Color(1.0, 0.42, 0.3, 1.0)
 @onready var result_retry: Label = $Root/Results/Panel/VBox/Retry
 
 @onready var home: Control = $Root/Home
-@onready var home_best_label: Label = $Root/Home/Panel/VBox/BestLabel
-@onready var home_wallet_label: Label = $Root/Home/Panel/VBox/WalletLabel
+@onready var home_best_label: Label = $Root/Home/Panel/VBox/StatsRow/BestLabel
+@onready var home_wallet_label: Label = $Root/Home/Panel/VBox/StatsRow/WalletLabel
 @onready var play_button: Button = $Root/Home/Panel/VBox/PlayButton
-@onready var shop_button: Button = $Root/Home/Panel/VBox/ShopButton
-@onready var how_to_button: Button = $Root/Home/Panel/VBox/HowToButton
+@onready var shop_button: Button = $Root/Home/Panel/VBox/ActionsRow/ShopButton
+@onready var how_to_button: Button = $Root/Home/Panel/VBox/ActionsRow/HowToButton
+
+## Power-ups aren't owned like skins - you pay for whatever's equipped
+## fresh out of the wallet every time you hit Play, same idea as a
+## Subway Surfers loadout pick.
+var _powerup_buttons: Dictionary = {}
+var _selected_powerups: Array[String] = []
 
 @onready var instructions: Control = $Root/Instructions
 @onready var dont_show_toggle: Button = $Root/Instructions/Panel/VBox/DontShowToggle
@@ -60,10 +66,72 @@ func _ready() -> void:
 	how_to_button.pressed.connect(func(): how_to_play_pressed.emit())
 	dont_show_toggle.toggled.connect(_update_toggle_text)
 	close_button.pressed.connect(_close_instructions)
+	_setup_powerups()
 
 	results.visible = false
 	home.visible = false
 	instructions.visible = false
+
+
+func _setup_powerups() -> void:
+	var powerups_panel: PanelContainer = $Root/Home/Panel/VBox/PowerupsPanel
+	powerups_panel.add_theme_stylebox_override("panel", _inset_panel_style())
+	var grid := powerups_panel.get_node("PowerupsBox/PowerupGrid")
+	var buttons := {
+		"frozen_time": grid.get_node("FrozenTimeButton"),
+		"multiplier": grid.get_node("MultiplierButton"),
+		"gold_rush": grid.get_node("GoldRushButton"),
+		"rapid_fire": grid.get_node("RapidFireButton"),
+	}
+	for id in buttons:
+		var btn: Button = buttons[id]
+		_powerup_buttons[id] = btn
+		_style_powerup_button(btn)
+		btn.text = "%s\n$%d" % [SaveData.powerup_name(id), SaveData.powerup_price(id)]
+		btn.toggled.connect(_on_powerup_toggled.bind(id))
+
+
+func _on_powerup_toggled(pressed: bool, id: String) -> void:
+	if pressed:
+		if not _selected_powerups.has(id):
+			_selected_powerups.append(id)
+	else:
+		_selected_powerups.erase(id)
+	_refresh_powerup_cards()
+
+
+func _powerup_total_cost() -> int:
+	var total := 0
+	for id in _selected_powerups:
+		total += SaveData.powerup_price(id)
+	return total
+
+
+## Re-checks affordability (wallet may have changed since last shown) and
+## keeps the Play button labeled with whatever equipping will cost.
+func _refresh_powerup_cards() -> void:
+	var total := _powerup_total_cost()
+	for id in _powerup_buttons.keys():
+		var btn: Button = _powerup_buttons[id]
+		var selected: bool = _selected_powerups.has(id)
+		if btn.button_pressed != selected:
+			btn.set_pressed_no_signal(selected)
+		if selected:
+			btn.disabled = false
+		else:
+			var would_cost: int = total + SaveData.powerup_price(id)
+			btn.disabled = SaveData.money < would_cost
+	play_button.text = ("PLAY  -$%d" % total) if total > 0 else "PLAY"
+
+
+## What the player has equipped for the next run, and what it costs -
+## Game charges the wallet and applies the effects when Play fires.
+func get_selected_powerups() -> Array[String]:
+	return _selected_powerups.duplicate()
+
+
+func get_powerup_cost() -> int:
+	return _powerup_total_cost()
 
 
 func _ignore_mouse(node: Node) -> void:
@@ -90,6 +158,43 @@ func _style_button(btn: Button) -> void:
 	btn.mouse_exited.connect(func(): _punch_scale(btn, 1.0))
 	btn.button_down.connect(func(): _punch_scale(btn, 0.94))
 	btn.button_up.connect(func(): _punch_scale(btn, 1.06 if btn.is_hovered() else 1.0))
+
+
+## Toggle-mode cards for the power-up picker. Godot already swaps to the
+## "pressed" stylebox for as long as button_pressed is true, so that state
+## doubles as "equipped" for free - no manual style-swapping needed.
+func _style_powerup_button(btn: Button) -> void:
+	btn.add_theme_stylebox_override("normal",
+		_button_style(Color(0.32, 0.20, 0.09, 0.95), Color(0.85, 0.7, 0.35, 1.0)))
+	btn.add_theme_stylebox_override("hover",
+		_button_style(Color(0.42, 0.27, 0.12, 0.95), Color(1.0, 0.85, 0.4, 1.0)))
+	btn.add_theme_stylebox_override("pressed",
+		_button_style(Color(0.14, 0.30, 0.15, 0.95), Color(0.55, 1.0, 0.55, 1.0)))
+	btn.add_theme_stylebox_override("focus",
+		_button_style(Color(0.32, 0.20, 0.09, 0.95), Color(0.85, 0.7, 0.35, 1.0)))
+	btn.add_theme_stylebox_override("disabled",
+		_button_style(Color(0.15, 0.17, 0.20, 0.85), Color(0.4, 0.45, 0.5, 1.0)))
+	btn.add_theme_color_override("font_color", Color(1, 0.96, 0.85))
+	btn.add_theme_color_override("font_hover_color", Color(1, 1, 0.92))
+	btn.add_theme_color_override("font_pressed_color", Color(0.8, 1.0, 0.8))
+	btn.add_theme_color_override("font_disabled_color", Color(0.6, 0.65, 0.7, 0.8))
+	btn.mouse_filter = Control.MOUSE_FILTER_STOP
+	btn.resized.connect(func(): btn.pivot_offset = btn.size * 0.5)
+	btn.mouse_entered.connect(func(): _punch_scale(btn, 1.05))
+	btn.mouse_exited.connect(func(): _punch_scale(btn, 1.0))
+
+
+## A recessed sub-panel look for grouping content (the power-ups module)
+## inside a bigger PanelContainer, without competing with the bold gold
+## outer border.
+func _inset_panel_style() -> StyleBoxFlat:
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = Color(0.0, 0.0, 0.0, 0.28)
+	sb.border_color = Color(0.55, 0.7, 0.85, 0.35)
+	sb.set_border_width_all(2)
+	sb.set_corner_radius_all(8)
+	sb.set_content_margin_all(10)
+	return sb
 
 
 func _button_style(bg: Color, border: Color) -> StyleBoxFlat:
@@ -238,6 +343,7 @@ func hide_results() -> void:
 func show_home(best: int, wallet: int) -> void:
 	home_best_label.text = "BEST  %d FISH" % best
 	home_wallet_label.text = "WALLET  $%d" % wallet
+	_refresh_powerup_cards()
 	home.visible = true
 	home.modulate.a = 0.0
 	var panel: Control = $Root/Home/Panel
