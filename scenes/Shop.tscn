@@ -1,0 +1,103 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/shop.gd" id="1_shop"]
+[ext_resource type="FontFile" path="res://assets/fonts/PressStart2P.ttf" id="2_press"]
+[ext_resource type="FontFile" path="res://assets/fonts/VT323.ttf" id="3_vt323"]
+[ext_resource type="Texture2D" path="res://assets/generated/bg_underwater.png" id="4_bg"]
+
+[node name="Shop" type="Control"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+script = ExtResource("1_shop")
+
+[node name="BG" type="TextureRect" parent="."]
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+texture = ExtResource("4_bg")
+expand_mode = 1
+stretch_mode = 0
+
+[node name="Dim" type="ColorRect" parent="."]
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+color = Color(0.01, 0.04, 0.08, 0.62)
+
+[node name="Header" type="VBoxContainer" parent="."]
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -450.0
+offset_top = 14.0
+offset_right = 450.0
+offset_bottom = 110.0
+grow_horizontal = 2
+theme_override_constants/separation = 2
+
+[node name="Title" type="Label" parent="Header"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.95, 0.6, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 8
+theme_override_fonts/font = ExtResource("2_press")
+theme_override_font_sizes/font_size = 30
+text = "SHOP"
+horizontal_alignment = 1
+
+[node name="Subtitle" type="Label" parent="Header"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.85, 0.95, 1, 0.9)
+theme_override_fonts/font = ExtResource("3_vt323")
+theme_override_font_sizes/font_size = 20
+text = "Your fishing money buys a new hull. Skins are cosmetic - the fish don't care."
+horizontal_alignment = 1
+
+[node name="Wallet" type="Label" parent="Header"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.85, 0.32, 1)
+theme_override_fonts/font = ExtResource("2_press")
+theme_override_font_sizes/font_size = 16
+text = "WALLET  $0"
+horizontal_alignment = 1
+
+[node name="Center" type="CenterContainer" parent="."]
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = 112.0
+offset_bottom = -92.0
+mouse_filter = 2
+
+[node name="Grid" type="GridContainer" parent="Center"]
+layout_mode = 2
+theme_override_constants/h_separation = 14
+theme_override_constants/v_separation = 14
+columns = 3
+
+[node name="Footer" type="VBoxContainer" parent="."]
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -300.0
+offset_top = -84.0
+offset_right = 300.0
+offset_bottom = -12.0
+grow_horizontal = 2
+grow_vertical = 0
+theme_override_constants/separation = 6
+
+[node name="Hint" type="Label" parent="Footer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.88, 0.96, 1, 0.85)
+theme_override_fonts/font = ExtResource("3_vt323")
+theme_override_font_sizes/font_size = 18
+text = "Buying a skin equips it straight away. Press Esc to go back."
+horizontal_alignment = 1
+
+[node name="BackButton" type="Button" parent="Footer"]
+custom_minimum_size = Vector2(240, 48)
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_fonts/font = ExtResource("2_press")
+theme_override_font_sizes/font_size = 15
+text = "BACK TO MENU"

@@ -16,6 +16,8 @@ const SPARK_TEXTURE := preload("res://assets/generated/spark.png")
 
 var _t: float = 0.0
 var _sprite_base: Vector2 = Vector2.ZERO
+var _content_size: Vector2 = Vector2.ZERO
+var _muzzle_override: Vector2 = Vector2.ZERO
 
 @onready var sprite: Sprite2D = $Sprite
 @onready var muzzle: Marker2D = $Muzzle
@@ -26,7 +28,25 @@ func _ready() -> void:
 		sprite.texture = body_texture
 	_fit_sprite()
 	_sprite_base = sprite.position
+	_apply_muzzle()
 	_make_bubbles()
+
+
+## Swap the artwork, used when the player equips a shop skin. `muzzle_override`
+## is for skins whose gun barrel sits somewhere specific; Vector2.ZERO means
+## "work it out from the hull".
+func set_skin(texture: Texture2D, muzzle_override: Vector2 = Vector2.ZERO) -> void:
+	_muzzle_override = muzzle_override
+	body_texture = texture
+	_apply_muzzle()
+
+
+func _apply_muzzle() -> void:
+	if _muzzle_override != Vector2.ZERO:
+		muzzle.position = _muzzle_override
+	elif _content_size != Vector2.ZERO:
+		# top front of the hull
+		muzzle.position = Vector2(_content_size.x * 0.42, -_content_size.y * 0.5)
 
 
 func muzzle_position() -> Vector2:
@@ -48,6 +68,7 @@ func _fit_sprite() -> void:
 	var tex_size: Vector2 = Vector2(tex.get_size())
 	var s: float = TARGET_HEIGHT / float(used.size.y)
 	sprite.scale = Vector2(s, s)
+	_content_size = Vector2(used.size) * s
 	var content_center_x: float = float(used.position.x) + float(used.size.x) * 0.5
 	var content_bottom_y: float = float(used.position.y + used.size.y)
 	sprite.position = Vector2(

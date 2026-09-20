@@ -1,7 +1,7 @@
 class_name HUD
 extends CanvasLayer
 
-## Run UI: home screen, instructions modal, score/countdown/catch readouts,
+## Run UI: home screen, instructions modal, score/countdown/money readouts,
 ## announcements, the results panel, and the run-start transition.
 ## Every panel here is a PanelContainer + VBoxContainer, sized from real
 ## font metrics rather than hand-picked pixel boxes - that's what keeps
@@ -9,6 +9,7 @@ extends CanvasLayer
 
 signal play_pressed
 signal how_to_play_pressed
+signal shop_pressed
 signal instructions_dismissed(dont_show_again: bool)
 
 const GOLD := Color(1.0, 0.85, 0.32, 1.0)
@@ -16,12 +17,13 @@ const DANGER := Color(1.0, 0.42, 0.3, 1.0)
 
 @onready var score_panel: Control = $Root/TopBar/ScorePanel
 @onready var time_panel: Control = $Root/TopBar/TimePanel
-@onready var caught_panel: Control = $Root/TopBar/CaughtPanel
+@onready var money_panel: Control = $Root/TopBar/MoneyPanel
 @onready var score_value: Label = $Root/TopBar/ScorePanel/VBox/ScoreValue
 @onready var best_value: Label = $Root/TopBar/ScorePanel/VBox/BestValue
 @onready var time_value: Label = $Root/TopBar/TimePanel/VBox/TimeValue
 @onready var time_bar: ColorRect = $Root/TopBar/TimePanel/VBox/TimeBarWrap/TimeBar
-@onready var caught_value: Label = $Root/TopBar/CaughtPanel/VBox/CaughtValue
+@onready var money_value: Label = $Root/TopBar/MoneyPanel/VBox/MoneyValue
+@onready var wallet_value: Label = $Root/TopBar/MoneyPanel/VBox/WalletValue
 @onready var message: Label = $Root/Message
 @onready var hint: Label = $Root/Hint
 
@@ -29,12 +31,15 @@ const DANGER := Color(1.0, 0.42, 0.3, 1.0)
 @onready var result_title: Label = $Root/Results/Panel/VBox/Title
 @onready var result_score: Label = $Root/Results/Panel/VBox/ScoreLine
 @onready var result_best: Label = $Root/Results/Panel/VBox/BestLine
+@onready var result_money: Label = $Root/Results/Panel/VBox/MoneyLine
 @onready var result_note: Label = $Root/Results/Panel/VBox/Note
 @onready var result_retry: Label = $Root/Results/Panel/VBox/Retry
 
 @onready var home: Control = $Root/Home
 @onready var home_best_label: Label = $Root/Home/Panel/VBox/BestLabel
+@onready var home_wallet_label: Label = $Root/Home/Panel/VBox/WalletLabel
 @onready var play_button: Button = $Root/Home/Panel/VBox/PlayButton
+@onready var shop_button: Button = $Root/Home/Panel/VBox/ShopButton
 @onready var how_to_button: Button = $Root/Home/Panel/VBox/HowToButton
 
 @onready var instructions: Control = $Root/Instructions
@@ -48,9 +53,10 @@ var _message_tween: Tween
 
 func _ready() -> void:
 	_ignore_mouse($Root)
-	for btn in [play_button, how_to_button, dont_show_toggle, close_button]:
+	for btn in [play_button, shop_button, how_to_button, dont_show_toggle, close_button]:
 		_style_button(btn)
 	play_button.pressed.connect(func(): play_pressed.emit())
+	shop_button.pressed.connect(func(): shop_pressed.emit())
 	how_to_button.pressed.connect(func(): how_to_play_pressed.emit())
 	dont_show_toggle.toggled.connect(_update_toggle_text)
 	close_button.pressed.connect(_close_instructions)
@@ -107,16 +113,23 @@ func _update_toggle_text(pressed: bool) -> void:
 
 # --------------------------------------------------------------- run HUD ---
 
+## The score is how many fish you landed this run.
 func set_score(value: int) -> void:
-	score_value.text = "$%d" % value
+	score_value.text = str(value)
 
 
 func set_best(value: int) -> void:
-	best_value.text = "BEST  $%d" % value
+	best_value.text = "BEST  %d FISH" % value
 
 
-func set_caught(count: int) -> void:
-	caught_value.text = str(count)
+## Money earned so far in this run.
+func set_earned(value: int) -> void:
+	money_value.text = "$%d" % value
+
+
+## Banked money plus whatever the current run has earned.
+func set_wallet(value: int) -> void:
+	wallet_value.text = "WALLET  $%d" % value
 
 
 ## time_bar fills by anchor fraction (not pixel width), so it's correct
@@ -159,11 +172,11 @@ func set_hint(p_text: String) -> void:
 	hint.text = p_text
 
 
-## A little staggered pop for the score/time/caught panels when a run
+## A little staggered pop for the score/time/money panels when a run
 ## actually starts, so the HUD feels like it "arrives" rather than just
 ## being static the whole time.
 func animate_run_start() -> void:
-	var panels: Array[Control] = [score_panel, time_panel, caught_panel]
+	var panels: Array[Control] = [score_panel, time_panel, money_panel]
 	for i in panels.size():
 		var p: Control = panels[i]
 		p.pivot_offset = p.size * 0.5
@@ -189,19 +202,22 @@ func play_transition(on_mid_flash: Callable) -> void:
 	tw.tween_callback(func(): transition.visible = false)
 
 
-func show_results(score: int, best: int, is_new_best: bool, title: String,
-		title_color: Color, note: String) -> void:
+## `score` is the fish caught this run, `earned` the money it made and
+## `wallet` the new banked total.
+func show_results(score: int, best: int, earned: int, wallet: int, is_new_best: bool,
+		title: String, title_color: Color, note: String) -> void:
 	result_title.text = title
 	result_title.add_theme_color_override("font_color", title_color)
-	result_score.text = "SCORE    $%d" % score
-	result_best.text = "BEST     $%d" % best
+	result_score.text = "CAUGHT   %d FISH" % score
+	result_best.text = "BEST     %d FISH" % best
+	result_money.text = "EARNED  $%d      WALLET  $%d" % [earned, wallet]
 	if is_new_best:
 		result_note.text = "NEW HIGH SCORE!"
 		result_note.add_theme_color_override("font_color", GOLD)
 	else:
 		result_note.text = note
 		result_note.add_theme_color_override("font_color", Color(0.8, 0.88, 0.98, 0.9))
-	result_retry.text = "Press R to dive again"
+	result_retry.text = "Press R to dive again   •   Esc for the menu"
 	results.visible = true
 	results.modulate.a = 0.0
 	var panel: Control = $Root/Results/Panel
@@ -219,8 +235,9 @@ func hide_results() -> void:
 
 # ---------------------------------------------------------------- home ----
 
-func show_home(best: int) -> void:
-	home_best_label.text = "BEST  $%d" % best
+func show_home(best: int, wallet: int) -> void:
+	home_best_label.text = "BEST  %d FISH" % best
+	home_wallet_label.text = "WALLET  $%d" % wallet
 	home.visible = true
 	home.modulate.a = 0.0
 	var panel: Control = $Root/Home/Panel

@@ -2,9 +2,7 @@ class_name Game
 extends Node2D
 
 ## Minute to Fish It: drag to aim the speargun, spear fish, reel them in for
-## money. A run lasts one minute. The score is how many fish you land in a run;
-## the money you earn is banked into SaveData so it piles up and can be spent
-## on submarine skins in the shop.
+## money. A run lasts one minute; the best score is kept between runs.
 
 const RUN_SECONDS := 60.0
 const COUNTDOWN_SECONDS := 3.0
@@ -28,14 +26,7 @@ const FISH_MIN_Y := 104.0
 const FISH_MAX_Y := 430.0
 const MAX_FISH := 9
 const SPAWN_MIN := 0.35
-const SPAWN_MAX := 0.8
-const START_FISH := 5
-const REEL_BASE_SPEED := 1500.0
-
-## The wallet, best score and skins live in SaveData's own file; this is just
-## the local UI preference for the instructions popup.
-const PREFS_PATH := "user://minute_to_fish_prefs.cfg"
-const SHOP_SCENE := "res://scenes/Shop.tscn"
+const SPAWN_MAX :const REEL_BASE_SPEED := 1500.0user://minute_to_fish_best.cfg"
 
 enum State { HOME, READY, FISHING, BOOM, OVER }
 
@@ -81,9 +72,9 @@ const SPARK_TEXTURE := preload("res://assets/generated/spark.png")
 @onready var hud: HUD = $HUD
 
 var state: State = State.HOME
-## `caught` is the run's score (fish landed); `earned` is the money it made.
+var score: int = 0
+var best: int = 0
 var caught: int = 0
-var earned: int = 0
 var time_left: float = RUN_SECONDS
 var aim_angle: float = -72.0
 var aim_power: float = 0.62
@@ -101,33 +92,31 @@ var _spear: Spear = null
 var _awaiting_first_play: bool = false
 var _restart_armed: bool = false
 var _restart_arm_timer: float = 0.0
-## Fish art lives here, loaded through Assets so a freshly generated png still
-## works even before the editor has imported it.
+## Fish art lives here, loaded through _load_texture() so a freshly generated
+## png still works before the editor has imported it.
 var _fish_textures: Dictionary = {}
 
 
 func _ready() -> void:
 	_rng.randomize()
 	for key in FISH_TYPES:
-		_fish_textures[key] = Assets.load_texture(str(FISH_TYPES[key]["path"]))
+		_fish_textures[key] = _load_texture(str(FISH_TYPES[key]["path"]))
+	best = _load_best()
 	hide_instructions_pref = _load_hide_instructions_pref()
-	sub.set_skin(SaveData.equipped_texture(), SaveData.muzzle_for(SaveData.equipped_skin))
+	hud.set_best(best)
 	hud.set_score(0)
-	hud.set_best(SaveData.best_score)
-	hud.set_earned(0)
-	hud.set_wallet(SaveData.money)
+	hud.set_caught(0)
 	hud.set_time(RUN_SECONDS, RUN_SECONDS)
 	hud.hide_results()
-	hud.set_hint("")
+	hud.set_hint("Drag anywhere to aim, release to fire   •   arrows to aim, Up/Down for power, Space to fire")
 	rope.visible = false
 
 	hud.play_pressed.connect(_on_play_pressed)
 	hud.how_to_play_pressed.connect(_on_how_to_play_pressed)
 	hud.instructions_dismissed.connect(_on_instructions_dismissed)
-	hud.shop_pressed.connect(_on_shop_pressed)
 
 	state = State.HOME
-	hud.show_home(SaveData.best_score, SaveData.money)
+	hud.show_home(best)
 
 
 func _on_play_pressed() -> void:
@@ -142,11 +131,6 @@ func _on_play_pressed() -> void:
 func _on_how_to_play_pressed() -> void:
 	_awaiting_first_play = false
 	hud.open_instructions(hide_instructions_pref)
-
-
-func _on_shop_pressed() -> void:
-	get_tree().paused = false
-	get_tree().change_scene_to_file(SHOP_SCENE)
 
 
 func _on_instructions_dismissed(dont_show_again: bool) -> void:
@@ -164,13 +148,6 @@ func _begin_run() -> void:
 	state = State.READY
 	_intro_timer = COUNTDOWN_SECONDS
 	_countdown_step = -1
-	caught = 0
-	earned = 0
-	time_left = RUN_SECONDS
-	hud.set_score(0)
-	hud.set_earned(0)
-	hud.set_wallet(SaveData.money)
-	hud.set_hint("Drag anywhere to aim, release to fire   •   arrows to aim, Up/Down for power, Space to fire")
 	for i in START_FISH:
 		_spawn_fish(_rng.randf_range(90.0, 1060.0))
 	hud.animate_run_start()
@@ -232,12 +209,11 @@ func _reset_run_state() -> void:
 	_dragging = false
 	preview.enabled = false
 	_restart_armed = false
+	score = 0
 	caught = 0
-	earned = 0
 	time_left = RUN_SECONDS
 	hud.set_score(0)
-	hud.set_earned(0)
-	hud.set_wallet(SaveData.money)
+	hud.set_caught(0)
 	hud.set_time(RUN_SECONDS, RUN_SECONDS)
 	hud.hide_results()
 	hud.clear_message()
@@ -250,15 +226,11 @@ func _restart_run() -> void:
 	)
 
 
-## Esc: back to the title screen from anywhere in a run. Anything already
-## caught is banked first, so leaving to visit the shop never costs you money.
+## Esc: back to the title screen from anywhere in a run.
 func _return_to_home() -> void:
-	if state != State.HOME and (caught > 0 or earned > 0):
-		SaveData.record_run(earned, caught)
 	_reset_run_state()
 	state = State.HOME
-	hud.set_hint("")
-	hud.show_home(SaveData.best_score, SaveData.money)
+	hud.show_home(best)
 
 
 ## Screen (viewport) point to world point, following the camera.
@@ -391,9 +363,13 @@ func _explode(fish: Fish) -> void:
 	var blast: Vector2 = _spear.global_position
 	add_shake(34.0)
 	_burst(blast, Color(1.0, 0.6, 0.2, 0.95), 70, 620.0, 0.1, 0.34)
-	_burst(blast, Color(1.0, 0.95, 0.65, 0.9), 40, 320.0, 0.12, 0.5)
-	_burst(blast, Color(0.4, 0.42, 0.45, 0.8), 30, 220.0, 0.25, 0.7)
-	hud.show_message("BOOM!", Color(1.0, 0.45, 0.25), 1.4)
+	_burst(bl	var gained: int = fish.value
+	var kind: String = fish.kind
+	earned += gained
+	caught += 1
+	hud.set_score(caught)
+	hud.set_earned(earned)
+	hud.set_wallet(SaveData.money + earned)!", Color(1.0, 0.45, 0.25), 1.4)
 	hud.set_hint("Your sub went up in bubbles...")
 
 
@@ -403,11 +379,10 @@ func _on_spear_collected(fish: Fish) -> void:
 		return
 	var gained: int = fish.value
 	var kind: String = fish.kind
-	earned += gained
+	score += gained
 	caught += 1
-	hud.set_score(caught)
-	hud.set_earned(earned)
-	hud.set_wallet(SaveData.money + earned)
+	hud.set_score(score)
+	hud.set_caught(caught)
 	_popup(fish.global_position + Vector2(0.0, -40.0), "+$%d" % gained, Color(1.0, 0.88, 0.4), 42)
 	_burst(fish.global_position, Color(1.0, 0.88, 0.4, 0.9), 16, 240.0, 0.05, 0.14)
 	if kind == "golden":
@@ -512,15 +487,13 @@ func _update_rope() -> void:
 	var points: PackedVector2Array = PackedVector2Array()
 	var distance: float = from.distance_to(to)
 	var sag: float = clampf(distance * 0.05, 1.0, 22.0)
-	for i in segments + 1:
-		var t: float = float(i) / float(segments)
-		var point: Vector2 = from.lerp(to, t)
-		point.y += sin(t * PI) * sag
-		points.append(point)
-	rope.points = points
-
-
-func _end_run(title: String, title_color: Color, note: String) -> void:
+	for i in segme	var new_best: bool = SaveData.record_run(earned, caught)
+	hud.set_best(SaveData.best_score)
+	hud.set_wallet(SaveData.money)
+	hud.clear_message()
+	hud.set_hint("R to dive again   •   M for the menu")
+	hud.show_results(caught, SaveData.best_score, earned, SaveData.money, new_best,
+		title, title_color, note)te: String) -> void:
 	if state == State.OVER:
 		return
 	state = State.OVER
@@ -529,14 +502,14 @@ func _end_run(title: String, title_color: Color, note: String) -> void:
 	rope.visible = false
 	if _spear != null and is_instance_valid(_spear):
 		_spear.freeze()
-	# bank the run: money piles up in the wallet, best score is fish caught
-	var new_best: bool = SaveData.record_run(earned, caught)
-	hud.set_best(SaveData.best_score)
-	hud.set_wallet(SaveData.money)
+	var new_best: bool = score > best
+	if new_best:
+		best = score
+		_save_best()
+	hud.set_best(best)
 	hud.clear_message()
-	hud.set_hint("R to dive again   •   Esc for the menu")
-	hud.show_results(caught, SaveData.best_score, earned, SaveData.money, new_best,
-		title, title_color, note)
+	hud.set_hint("Press R for another run")
+	hud.show_results(score, best, new_best, title, title_color, note)
 	add_shake(10.0)
 	_burst(sub.muzzle_position(), Color(0.7, 0.95, 1.0, 0.8), 14, 220.0, 0.04, 0.12)
 
@@ -576,8 +549,9 @@ func _burst(at: Vector2, color: Color, amount: int, speed: float,
 	particles.initial_velocity_max = speed
 	# the size curve wins over scale_amount_min/max, so drive sizes here
 	var size_curve: Curve = Curve.new()
-	size_curve.add_point(Vector2(0.0, max_scale))
-	size_curve.add_point(Vector2(0.6, min_scale * 2.0))
+	size_curve.add_poin## Importer-independent texture loading (see Assets).
+
+func _load_texture(path: String) -> Texture2D:_point(Vector2(0.6, min_scale * 2.0))
 	size_curve.add_point(Vector2(1.0, 0.0))
 	particles.scale_amount_curve = size_curve
 	particles.color = color
@@ -588,15 +562,43 @@ func _burst(at: Vector2, color: Color, amount: int, speed: float,
 	t.tween_callback(particles.queue_free)
 
 
+## Importer-independent texture loading: falls back to reading the png straight
+## from disk, which is what happens for an asset the editor has not imported yet.
+func _load_texture(path: String) -> Texture2D:
+	if ResourceLoader.exists(path):
+		var res: Resource = load(path)
+		if res is Texture2D:
+			return res
+	var image: Image = Image.load_from_file(path)
+	if image != null:
+		return ImageTexture.create_from_image(image)
+	push_warning("Missing texture: %s" % path)
+	return null
+
+
+func _load_best() -> int:
+	var config: ConfigFile = ConfigFile.new()
+	if config.load(SAVE_PATH) == OK:
+		return int(config.get_value("score", "best", 0))
+	return 0
+
+
+func _save_best() -> void:
+	var config: ConfigFile = ConfigFile.new()
+	config.load(SAVE_PATH) # keep any other keys (e.g. prefs) already in the file
+	config.set_value("score", "best", best)
+	config.save(SAVE_PATH)
+
+
 func _load_hide_instructions_pref() -> bool:
 	var config: ConfigFile = ConfigFile.new()
-	if config.load(PREFS_PATH) == OK:
+	if config.load(SAVE_PATH) == OK:
 		return bool(config.get_value("prefs", "hide_instructions", false))
 	return false
 
 
 func _save_hide_instructions_pref() -> void:
 	var config: ConfigFile = ConfigFile.new()
-	config.load(PREFS_PATH)
+	config.load(SAVE_PATH) # keep any other keys (e.g. best score) already in the file
 	config.set_value("prefs", "hide_instructions", hide_instructions_pref)
-	config.save(PREFS_PATH)
+	config.save(SAVE_PATH)
